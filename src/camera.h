@@ -3,13 +3,14 @@
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-
+#include "object.h"
 class Camera {
 public:
     glm::vec3 Position, Front, Up, Right, WorldUp;
     float Yaw, Pitch;
     float MovementSpeed, MouseSensitivity;
-
+    
+    Object* focusedObject = nullptr;
     Camera(glm::vec3 position, glm::vec3 up, float yaw, float pitch)
         : Front(glm::vec3(0.0f, 0.0f, -1.0f)), MovementSpeed(2.5f), MouseSensitivity(0.1f) {
         Position = position;
@@ -18,6 +19,9 @@ public:
         Pitch = pitch;
         updateCameraVectors();
     }
+    Camera(Object obj) : MouseSensitivity(0.1f) {
+    
+    }
 
     glm::mat4 GetViewMatrix() {
         return glm::lookAt(Position, Position + Front, Up);
@@ -25,11 +29,11 @@ public:
 
     void ProcessKeyboard(char direction, float deltaTime) {
         float velocity = MovementSpeed * deltaTime;
-        if (direction == 'W')
+        if (direction == 'Z')
             Position += Front * velocity;
         if (direction == 'S')
             Position -= Front * velocity;
-        if (direction == 'A')
+        if (direction == 'Q')
             Position -= Right * velocity;
         if (direction == 'D')
             Position += Right * velocity;

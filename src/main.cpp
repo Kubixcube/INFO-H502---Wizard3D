@@ -4,13 +4,14 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+//#define STB_IMAGE_IMPLEMENTATION
+//#include "stb_image.h"
 #define STB_IMAGE_IMPLEMENTATION
-#include "stb_image.h"
-
 #include "shader.h"
 #include "camera.h"
-
+#include "../DynamicObject.h"
 #include <iostream>
+#include "../scene.h"
 
 // settings
 const unsigned int SCR_WIDTH = 800;
@@ -53,17 +54,80 @@ void processInput(GLFWwindow *window) {
     float cameraSpeed = 2.5f * deltaTime;
 
     if(glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-        camera.ProcessKeyboard('W', deltaTime);
+        camera.ProcessKeyboard('Z', deltaTime);
     if(glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
         camera.ProcessKeyboard('S', deltaTime);
     if(glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-        camera.ProcessKeyboard('A', deltaTime);
+        camera.ProcessKeyboard('Q', deltaTime);
     if(glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
         camera.ProcessKeyboard('D', deltaTime);
 }
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
     glViewport(0, 0, width, height);
+}
+inline glm::vec3 calculateMinimumTranslationVector(const AABB& boxA, const AABB& boxB) {
+    float overlapX = std::min(boxA.max.x - boxB.min.x, boxB.max.x - boxA.min.x);
+    float overlapY = std::min(boxA.max.y - boxB.min.y, boxB.max.y - boxA.min.y);
+    float overlapZ = std::min(boxA.max.z - boxB.min.z, boxB.max.z - boxA.min.z);
+
+    glm::vec3 centerA = 0.5f * (boxA.min + boxA.max);
+    glm::vec3 centerB = 0.5f * (boxB.min + boxB.max);
+
+    if (overlapX <= overlapY && overlapX <= overlapZ)
+        return glm::vec3((centerA.x < centerB.x) ? -overlapX : overlapX, 0, 0);
+
+    if (overlapY <= overlapX && overlapY <= overlapZ)
+        return glm::vec3(0, (centerA.y < centerB.y) ? -overlapY : overlapY, 0);
+
+    return glm::vec3(0, 0, (centerA.z < centerB.z) ? -overlapZ : overlapZ);
+}
+
+inline void resolveObjectCollision(Object& objectA, Object& objectB) {
+    AABB boundsA = objectA.worldAABB();
+    AABB boundsB = objectB.worldAABB();
+
+    if (!AABB::collisionCheck(boundsA, boundsB))
+        return;
+
+    glm::vec3 mtv = calculateMinimumTranslationVector(boundsA, boundsB);
+    if (mtv == glm::vec3(0))
+        return;
+
+    DynamicObject* dynamicA = dynamic_cast<DynamicObject*>(&objectA);
+    DynamicObject* dynamicB = dynamic_cast<DynamicObject*>(&objectB);
+    glm::vec3 collisionNormal = glm::normalize(mtv);
+
+    if (dynamicA && !dynamicB) {
+        dynamicA->posistion += mtv;
+        dynamicA->model = glm::translate(glm::mat4(1.0f), dynamicA->posistion);
+
+        float velocityAlongNormalA = glm::dot(dynamicA->mouvement, collisionNormal);
+        if (velocityAlongNormalA < 0.0f)
+            dynamicA->mouvement -= velocityAlongNormalA * collisionNormal;
+    }
+    else if (!dynamicA && dynamicB) {
+        dynamicB->posistion -= mtv;
+        dynamicB->model = glm::translate(glm::mat4(1.0f), dynamicB->posistion);
+
+        float velocityAlongNormalB = glm::dot(dynamicB->mouvement, collisionNormal);
+        if (velocityAlongNormalB > 0.0f)
+            dynamicB->mouvement -= velocityAlongNormalB * collisionNormal;
+    }
+    else if (dynamicA && dynamicB) {
+        dynamicA->posistion += 0.5f * mtv;
+        dynamicB->posistion -= 0.5f * mtv;
+        dynamicA->model = glm::translate(glm::mat4(1.0f), dynamicA->posistion);
+        dynamicB->model = glm::translate(glm::mat4(1.0f), dynamicB->posistion);
+
+        float velocityAlongNormalA = glm::dot(dynamicA->mouvement, collisionNormal);
+        if (velocityAlongNormalA < 0.0f)
+            dynamicA->mouvement -= velocityAlongNormalA * collisionNormal;
+
+        float velocityAlongNormalB = glm::dot(dynamicB->mouvement, collisionNormal);
+        if (velocityAlongNormalB > 0.0f)
+            dynamicB->mouvement -= velocityAlongNormalB * collisionNormal;
+    }
 }
 
 int main() {
@@ -88,116 +152,64 @@ int main() {
     }
 
     glEnable(GL_DEPTH_TEST);
-    unsigned int texture;
-    glGenTextures(1, &texture);
-    glBindTexture(GL_TEXTURE_2D, texture);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);  
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    stbi_set_flip_vertically_on_load(true);
-    int width, height, nrChannels;
-    unsigned char *data = stbi_load("../src/assets/textures/container.jpg", &width, &height, &nrChannels, 0);
-    if (data) {
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
-        glGenerateMipmap(GL_TEXTURE_2D);
-    } else {
-        std::cerr << "Failed to load texture" << std::endl;
-    }
-    stbi_image_free(data);
-
-    float vertices[] = {
-        // positions          // normals           // texcoords
-        -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f, 0.0f,
-        0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f, 0.0f,
-        0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f, 1.0f,
-        0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f, 1.0f,
-        -0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f, 1.0f,
-        -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f, 0.0f,
-
-        -0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  0.0f, 0.0f,
-        0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  1.0f, 0.0f,
-        0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  1.0f, 1.0f,
-        0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  1.0f, 1.0f,
-        -0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  0.0f, 1.0f,
-        -0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  0.0f, 0.0f,
-
-        -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  1.0f, 0.0f,
-        -0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  1.0f, 1.0f,
-        -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  0.0f, 1.0f,
-        -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  0.0f, 1.0f,
-        -0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  0.0f, 0.0f,
-        -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  1.0f, 0.0f,
-
-        0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f,
-        0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  1.0f, 1.0f,
-        0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.0f, 1.0f,
-        0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.0f, 1.0f,
-        0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  0.0f, 0.0f,
-        0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f,
-
-        -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  0.0f, 1.0f,
-        0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  1.0f, 1.0f,
-        0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  1.0f, 0.0f,
-        0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  1.0f, 0.0f,
-        -0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  0.0f, 0.0f,
-        -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  0.0f, 1.0f,
-
-        -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 1.0f,
-        0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  1.0f, 1.0f,
-        0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f, 0.0f,
-        0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f, 0.0f,
-        -0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 0.0f,
-        -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 1.0f
-    };
-
-    unsigned int VAO, VBO;
-    glGenVertexArrays(1, &VAO);
-    glGenBuffers(1, &VBO);
-    glBindVertexArray(VAO);
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
-    glEnableVertexAttribArray(1);
-    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
-    glEnableVertexAttribArray(2);
-
+    // create shader
     Shader shader("../src/shaders/light.vert", "../src/shaders/light.frag");
     shader.use();
     shader.setInt("texture1", 0);
-
+    shader.setVec2("tiling", 1.0f, 1.0f); // default tiling (can change per object)
+    // setting up the scene
+    Scene scene("fire range");
+    // load OBJ via Object class
+    // dynamic objects
+    auto cube = std::make_shared<DynamicObject>("../src/assets/objects/cube.obj", 5.0f);
+    //DynamicObject cube("../src/assets/objects/cube.obj", 5.0f);
+    cube->bindTexture("../src/assets/textures/container.jpg");
+    cube->setPos(glm::vec3(0.0f, 100.0f, 0.0f));
+    cube->makeObject(shader, true);
+    scene.addNewDynamicEntity(cube);
+    //static objects
+    //cube.model = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 10.0f, 0.0f)); // default
+    auto floor = std::make_shared<Object>("../src/assets/objects/plane.obj");
+    floor->bindTexture("../src/assets/textures/green-fake-grass-background.jpg");
+    floor->makeObject(shader, true);
+    scene.addNewStaticEntity(floor);
+    // --- main loop
     while (!glfwWindowShouldClose(window)) {
+        glClearColor(0.1f, 0.1f, 0.15f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         float currentFrame = glfwGetTime();
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
+        cube->updatePos(deltaTime);
+        resolveObjectCollision(*cube, *floor);
         processInput(window);
-        glClearColor(0.1f, 0.1f, 0.15f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
         shader.use();
-        glm::mat4 model = glm::mat4(1.0f);
+        cube->model = glm::translate(glm::mat4(1.0f), cube->posistion);
         glm::mat4 view = camera.GetViewMatrix();
-        glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)SCR_WIDTH / SCR_HEIGHT, 0.1f, 100.0f);
-        shader.setMat4("model", glm::value_ptr(model));
+        glm::mat4 proj = glm::perspective(glm::radians(45.0f), 800.0f / 600.0f, 0.1f, 100.0f);
         shader.setMat4("view", glm::value_ptr(view));
-        shader.setMat4("projection", glm::value_ptr(projection));
-
+        shader.setMat4("projection", glm::value_ptr(proj));
         shader.setVec3("lightDir", -0.2f, -1.0f, -0.3f);
         shader.setVec3("lightColor", 1.0f, 1.0f, 1.0f);
         shader.setVec3("objectColor", 1.0f, 1.0f, 1.0f);
 
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, texture);
+        floor->model = glm::mat4(1.0f);
+        floor->model = glm::translate(floor->model, glm::vec3(0.0f, -1.0f, 0.0f));
+        floor->model = glm::scale(floor->model, glm::vec3(10.0f, 1.0f, 10.0f));
 
-        glBindVertexArray(VAO);
-        glDrawArrays(GL_TRIANGLES, 0, 36);
+        shader.setMat4("model", glm::value_ptr(floor->model));
+        shader.setVec2("tiling", 8.0f, 8.0f);
+        floor->draw();
+
+        shader.setMat4("model", glm::value_ptr(cube->model));
+        shader.setVec2("tiling", 4.0f, 4.0f);
+        cube->draw();
 
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
 
+    // cleanup & terminate
     glfwTerminate();
     return 0;
 }

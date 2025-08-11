@@ -1,0 +1,17 @@
+x64
+Release
+Debug
+glad.dir
+LightingCube.dir
+CMakeFiles
+RelWithDebInfo
+*.vcxproj
+*.vcxproj.filters
+*.vcxproj.user
+.vs
+*.sln
+CMakeCache.txt
+CMakeDoxyfile.in
+cmake_install.cmake_install
+CMakeDoxygenDefaults.cmake
+cmake_install.cmake

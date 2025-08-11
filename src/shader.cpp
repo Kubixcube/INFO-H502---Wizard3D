@@ -41,6 +41,9 @@ void Shader::setMat4(const std::string &name, const float* value) const {
 void Shader::setVec3(const std::string &name, float x, float y, float z) const {
     glUniform3f(glGetUniformLocation(ID, name.c_str()), x, y, z);
 }
+void Shader::setVec2(const std::string& name, float x, float y) const {
+    glUniform2f(glGetUniformLocation(ID, name.c_str()), x, y);
+}
 
 void Shader::setInt(const std::string &name, int value) const {
     glUniform1i(glGetUniformLocation(ID, name.c_str()), value);
