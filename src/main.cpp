@@ -172,8 +172,6 @@ int main(){
     floor.model = glm::mat4(1.0f);
     floor.halfExtents = glm::vec3(20.0f, 0.1f, 20.0f);
     // temporary solution for a floor
-    Object& floorEntity = scene.addEntity(std::move(floor), 0.0f, true);
-    floorEntity.model = glm::scale(glm::mat4(1.0f), glm::vec3(20.0f, 1.0f, 20.0f));
     scene.addEntity(floor, 0.0f, true);
     Object fallingCube{"assets/models/cube.obj", "assets/textures/container.jpg"};
     fallingCube.model = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 50.0f, 0.0f));
@@ -210,7 +208,11 @@ int main(){
         lighting.setFloat("shininess", shininess);
         for (const auto& entity : scene.getEntities()) {
             lighting.setMat4("M", entity.model);
+            
+            glFrontFace(GL_CW);
             entity.draw();
+            glFrontFace(GL_CCW);
+
         }
         env.use();
         env.setMat4("P", P);
@@ -222,8 +224,9 @@ int main(){
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTex);
         glUniform1i(glGetUniformLocation(env.id(), "skybox"), 0);
+        glFrontFace(GL_CW);
         cube.draw();
-
+        glFrontFace(GL_CCW);
         lighting.use();
         lighting.setMat4("P", P);
         lighting.setMat4("V", V);
@@ -248,9 +251,13 @@ int main(){
         glDrawArrays(GL_TRIANGLES, 0, 36);
         glBindVertexArray(0);
 
-        glEnable(GL_CULL_FACE);
         glDepthMask(GL_TRUE);
         glDepthFunc(GL_LESS);
+        glEnable(GL_CULL_FACE);
+        glCullFace(GL_BACK);
+        glFrontFace(GL_CCW);
+
+
 
         glfwSwapBuffers(win); glfwPollEvents();
 
