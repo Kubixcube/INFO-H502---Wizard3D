@@ -9,6 +9,7 @@
 #include "engine/shader.h"
 #include "engine/camera.h"
 #include "engine/object.h"
+#include "engine/scene.h"
 
 static int SCR_WIDTH=1280, SCR_HEIGHT=720;
 Camera camera(glm::vec3(0.0f,1.5f,5.0f));
@@ -165,9 +166,19 @@ int main(){
 
     Shader env("src/shaders/envmap.vert", "src/shaders/envmap.frag");
     float reflectMix = 0.6f;
+    Scene scene{"Firing range"};
 
-
-
+    Object floor{"assets/models/plane.obj", "assets/textures/grass.jpg"};
+    floor.model = glm::mat4(1.0f);
+    floor.halfExtents = glm::vec3(20.0f, 0.1f, 20.0f);
+    // temporary solution for a floor
+    Object& floorEntity = scene.addEntity(std::move(floor), 0.0f, true);
+    floorEntity.model = glm::scale(glm::mat4(1.0f), glm::vec3(20.0f, 1.0f, 20.0f));
+    scene.addEntity(floor, 0.0f, true);
+    Object fallingCube{"assets/models/cube.obj", "assets/textures/container.jpg"};
+    fallingCube.model = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 50.0f, 0.0f));
+//    scene.addEntity(std::move(fallingCube), 50.0f, false);
+    scene.addEntity(fallingCube, 50.0f, false);
     Object wizard("assets/models/wizard.obj","assets/textures/wizard_diffuse.png");
     Object cube  ("assets/models/cube.obj");
 //    GLuint texWizard=loadTexture2D("assets/textures/wizard_diffuse.png");
@@ -181,6 +192,7 @@ int main(){
         float dt = t-last;
         last=t;
         processInput(win,dt);
+        scene.update(dt);
         glm::mat4 P= glm::perspective(glm::radians(camera.Zoom),(float)SCR_WIDTH/(float)SCR_HEIGHT,0.1f,100.0f);
         glm::mat4 V= useThirdPerson ? thirdPersonView(): camera.GetViewMatrix();
         wizard.model= glm::translate(glm::mat4(1.0f), playerPos);
@@ -196,7 +208,10 @@ int main(){
         lighting.setVec3("ambientColor", ambient);
         lighting.setVec3("specularColor", specular);
         lighting.setFloat("shininess", shininess);
-
+        for (const auto& entity : scene.getEntities()) {
+            lighting.setMat4("M", entity.model);
+            entity.draw();
+        }
         env.use();
         env.setMat4("P", P);
         env.setMat4("V", V);

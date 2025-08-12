@@ -15,7 +15,7 @@ add_library(glad 3rdParty/glad/src/glad.c
         src/engine/texture.cpp
         src/engine/texture.h)
 file(GLOB SOURCES src/*.cpp src/engine/*.cpp)
-add_executable(Wizard3D ${SOURCES})
+add_executable(Wizard3D src/engine/scene.cpp  ${SOURCES})
 
 add_custom_command(TARGET Wizard3D POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E make_directory $<TARGET_FILE_DIR:Wizard3D>/assets

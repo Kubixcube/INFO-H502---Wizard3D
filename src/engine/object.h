@@ -10,12 +10,19 @@
 #include <string>
 #include <cstdio>
 #include "texture.h"
+#include "reactphysics3d/body/RigidBody.h"
 
 class Object{
 public:
     GLuint VAO{0}, VBO{0};
     GLsizei numVertices{0};
     glm::mat4 model{1.0f};
+    // for rep3d collision
+    // Axis-aligned bounding boxes
+    // https://developer.mozilla.org/en-US/docs/Games/Techniques/3D_collision_detection
+    glm::vec3 halfExtents;
+    glm::vec3 aabbCenter;
+    reactphysics3d::RigidBody* body = nullptr;
     Texture texture;
     Object() = default;
     explicit Object(const char* path){ load(path); }
@@ -80,6 +87,29 @@ public:
                 }
             }
         }
+        // AABB and Half-Extents Calculation
+        if (!P.empty()) {
+//            glm::vec3 minBounds = P[0];
+//            glm::vec3 maxBounds = P[0];
+            glm::vec3 minBounds(std::numeric_limits<float>::max());
+            glm::vec3 maxBounds(-std::numeric_limits<float>::max());
+            for (const auto& pos : P) {
+                minBounds.x = std::min(minBounds.x, pos.x);
+                minBounds.y = std::min(minBounds.y, pos.y);
+                minBounds.z = std::min(minBounds.z, pos.z);
+
+                maxBounds.x = std::max(maxBounds.x, pos.x);
+                maxBounds.y = std::max(maxBounds.y, pos.y);
+                maxBounds.z = std::max(maxBounds.z, pos.z);
+            }
+            halfExtents = (maxBounds - minBounds) / 2.0f;
+            aabbCenter = minBounds + halfExtents;
+        }
+        else {
+            // Fallback for an empty or invalid model
+            this->halfExtents = glm::vec3(0.5f);
+            this->aabbCenter = glm::vec3(0.0f);
+        }
 
         numVertices = (GLsizei)(buf.size() / 8);
         std::cout << "[OBJ] " << path << " -> vertices: " << numVertices << std::endl;
@@ -103,6 +133,7 @@ public:
         glEnableVertexAttribArray(2);
 
         glBindVertexArray(0);
+
     }
 
     void draw() const {
