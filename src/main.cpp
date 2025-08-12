@@ -21,11 +21,20 @@ glm::mat4 thirdPersonView(){
     glm::vec3 eye=playerPos+glm::vec3(0,1.6f,0)-fwd*camDist+glm::vec3(0, camDist*0.25f, 0);
     return glm::lookAt(eye, playerPos+glm::vec3(0,1.6f,0), glm::vec3(0,1,0));
 }
-void framebuffer_size_callback(GLFWwindow*,int w,int h){ SCR_WIDTH=w; SCR_HEIGHT=h; glViewport(0,0,w,h); }
+void framebuffer_size_callback(GLFWwindow*,int w,int h){
+    SCR_WIDTH=w;
+    SCR_HEIGHT=h;
+    glViewport(0,0,w,h);
+}
 void mouse_callback(GLFWwindow*, double xpos,double ypos){
     if(firstMouse){ lastX=(float)xpos; lastY=(float)ypos; firstMouse=false; }
     float xo=(float)xpos-lastX, yo=lastY-(float)ypos; lastX=(float)xpos; lastY=(float)ypos;
-    if(useThirdPerson){ orbitYaw+=xo*0.15f; orbitPitch+=yo*0.15f; orbitPitch=glm::clamp(orbitPitch,-10.0f,80.0f);} else camera.ProcessMouseMovement(xo, yo);
+    if(useThirdPerson){
+        orbitYaw+=xo*0.15f;
+        orbitPitch+=yo*0.15f;
+        orbitPitch=glm::clamp(orbitPitch,-10.0f,80.0f);
+    }
+    else camera.ProcessMouseMovement(xo, yo);
 }
 void scroll_callback(GLFWwindow*, double, double yoff){ camera.ProcessMouseScroll((float)yoff); }
 void processInput(GLFWwindow* win,float dt){
@@ -50,17 +59,26 @@ void processInput(GLFWwindow* win,float dt){
     }
 }
 GLuint loadTexture2D(const char* path){
-    int w,h,c; stbi_set_flip_vertically_on_load(true);
+    int w,h,c;
+    stbi_set_flip_vertically_on_load(true);
     unsigned char* d=stbi_load(path,&w,&h,&c,0);
     if(!d){ unsigned char white[3]={255,255,255}; GLuint t; glGenTextures(1,&t);
-        glBindTexture(GL_TEXTURE_2D,t); glTexImage2D(GL_TEXTURE_2D,0,GL_RGB,1,1,0,GL_RGB,GL_UNSIGNED_BYTE,white);
-        glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR_MIPMAP_LINEAR); glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
-        glGenerateMipmap(GL_TEXTURE_2D); return t; }
+        glBindTexture(GL_TEXTURE_2D,t);
+        glTexImage2D(GL_TEXTURE_2D,0,GL_RGB,1,1,0,GL_RGB,GL_UNSIGNED_BYTE,white);
+        glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR_MIPMAP_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
+        glGenerateMipmap(GL_TEXTURE_2D);
+        return t;
+    }
     GLenum fmt=(c==4)?GL_RGBA:GL_RGB; GLuint t; glGenTextures(1,&t); glBindTexture(GL_TEXTURE_2D,t);
-    glTexImage2D(GL_TEXTURE_2D,0,fmt,w,h,0,fmt,GL_UNSIGNED_BYTE,d); glGenerateMipmap(GL_TEXTURE_2D);
-    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,GL_REPEAT); glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_T,GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR_MIPMAP_LINEAR); glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
-    stbi_image_free(d); return t;
+    glTexImage2D(GL_TEXTURE_2D,0,fmt,w,h,0,fmt,GL_UNSIGNED_BYTE,d);
+    glGenerateMipmap(GL_TEXTURE_2D);
+    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_T,GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR_MIPMAP_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
+    stbi_image_free(d);
+    return t;
 }
 
 // --- Cubemap loader ---
@@ -150,20 +168,22 @@ int main(){
 
 
 
-    Object wizard("assets/models/wizard.obj");
+    Object wizard("assets/models/wizard.obj","assets/textures/wizard_diffuse.png");
     Object cube  ("assets/models/cube.obj");
-    GLuint texWizard=loadTexture2D("assets/textures/wizard_diffuse.png");
-    GLuint texCube=loadTexture2D("assets/textures/container.jpg");
+//    GLuint texWizard=loadTexture2D("assets/textures/wizard_diffuse.png");
+//    GLuint texCube = loadTexture2D("assets/textures/container.jpg");
     glm::vec3 lightDir=glm::normalize(glm::vec3(-0.3f,-1.0f,-0.4f));
     glm::vec3 lightColor(1.0f), ambient(0.10f), specular(0.0f); float shininess=32.0f;
     cube.model=glm::translate(glm::mat4(1.0f), glm::vec3(0,0.5f,-2.0f));
-    float last=(float)glfwGetTime();
+    float last= (float) glfwGetTime();
     while(!glfwWindowShouldClose(win)){
-        float t=(float)glfwGetTime(); float dt=t-last; last=t;
+        float t =(float)glfwGetTime();
+        float dt = t-last;
+        last=t;
         processInput(win,dt);
-        glm::mat4 P=glm::perspective(glm::radians(camera.Zoom),(float)SCR_WIDTH/(float)SCR_HEIGHT,0.1f,100.0f);
-        glm::mat4 V=useThirdPerson?thirdPersonView():camera.GetViewMatrix();
-        wizard.model=glm::translate(glm::mat4(1.0f), playerPos);
+        glm::mat4 P= glm::perspective(glm::radians(camera.Zoom),(float)SCR_WIDTH/(float)SCR_HEIGHT,0.1f,100.0f);
+        glm::mat4 V= useThirdPerson ? thirdPersonView(): camera.GetViewMatrix();
+        wizard.model= glm::translate(glm::mat4(1.0f), playerPos);
         glViewport(0,0,SCR_WIDTH,SCR_HEIGHT);
         glClearColor(0.05f,0.07f,0.09f,1.0f);
         glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
@@ -192,8 +212,11 @@ int main(){
         lighting.use();
         lighting.setMat4("P", P);
         lighting.setMat4("V", V);
-        lighting.setMat4("M", wizard.model); glActiveTexture(GL_TEXTURE0); glBindTexture(GL_TEXTURE_2D, texWizard);
-        glUniform1i(glGetUniformLocation(lighting.id(),"diffuseMap"),0); wizard.draw();
+        lighting.setMat4("M", wizard.model);
+//        glActiveTexture(GL_TEXTURE0);
+//        glBindTexture(GL_TEXTURE_2D, texWizard);
+        glUniform1i(glGetUniformLocation(lighting.id(),"diffuseMap"),0);
+        wizard.draw();
 
         glDepthFunc(GL_LEQUAL);
         glDepthMask(GL_FALSE);
@@ -217,5 +240,6 @@ int main(){
         glfwSwapBuffers(win); glfwPollEvents();
 
     }
-    glfwTerminate(); return 0;
+    glfwTerminate();
+    return 0;
 }

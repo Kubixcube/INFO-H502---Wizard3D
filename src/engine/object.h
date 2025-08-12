@@ -9,16 +9,20 @@
 #include <vector>
 #include <string>
 #include <cstdio>
+#include "texture.h"
 
 class Object{
 public:
     GLuint VAO{0}, VBO{0};
-    GLsizei count{0};
+    GLsizei numVertices{0};
     glm::mat4 model{1.0f};
-
+    Texture texture;
     Object() = default;
     explicit Object(const char* path){ load(path); }
-
+    explicit Object(const char* objPath, const char* texPath) : Object(objPath){ bindTexture(texPath); }
+    void bindTexture(const char* path) {
+     texture = Texture{path};
+    }
     static bool parseFaceItem(const std::string& s, int& vi, int& ti, int& ni) {
         vi = ti = ni = 0;
         // Try v/t/n
@@ -77,10 +81,10 @@ public:
             }
         }
 
-        count = (GLsizei)(buf.size()/8);
-        std::cout << "[OBJ] " << path << " -> vertices: " << count << std::endl;
+        numVertices = (GLsizei)(buf.size() / 8);
+        std::cout << "[OBJ] " << path << " -> vertices: " << numVertices << std::endl;
 
-        if (count == 0) {
+        if (numVertices == 0) {
             std::cerr << "[OBJ] WARNING: no vertices parsed, nothing will be drawn.\n";
         }
 
@@ -88,19 +92,23 @@ public:
         if(!VBO) glGenBuffers(1, &VBO);
         glBindVertexArray(VAO);
         glBindBuffer(GL_ARRAY_BUFFER, VBO);
-        glBufferData(GL_ARRAY_BUFFER, buf.size()*sizeof(float), buf.data(), GL_STATIC_DRAW);
+        glBufferData(GL_ARRAY_BUFFER, buf.size() * sizeof(float), buf.data(), GL_STATIC_DRAW);
 
-        GLsizei stride = 8*sizeof(float);
-        glVertexAttribPointer(0,3,GL_FLOAT,GL_FALSE,stride,(void*)0);               glEnableVertexAttribArray(0);
-        glVertexAttribPointer(1,3,GL_FLOAT,GL_FALSE,stride,(void*)(3*sizeof(float))); glEnableVertexAttribArray(1);
-        glVertexAttribPointer(2,2,GL_FLOAT,GL_FALSE,stride,(void*)(6*sizeof(float))); glEnableVertexAttribArray(2);
+        GLsizei stride = 8 * sizeof(float);
+        glVertexAttribPointer(0,3,GL_FLOAT,GL_FALSE,stride,(void*) 0);
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(1,3,GL_FLOAT,GL_FALSE,stride,(void*)(3 * sizeof(float)));
+        glEnableVertexAttribArray(1);
+        glVertexAttribPointer(2,2,GL_FLOAT,GL_FALSE,stride,(void*)(6 * sizeof(float)));
+        glEnableVertexAttribArray(2);
 
         glBindVertexArray(0);
     }
 
     void draw() const {
+        texture.map();
         glBindVertexArray(VAO);
-        glDrawArrays(GL_TRIANGLES, 0, count);
+        glDrawArrays(GL_TRIANGLES, 0, numVertices);
         glBindVertexArray(0);
     }
 };

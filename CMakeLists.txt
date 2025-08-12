@@ -8,7 +8,9 @@ include_directories(3rdParty/glad/include)
 include_directories(3rdParty/glm)
 include_directories(3rdParty/stb)
 include_directories(src)
-add_library(glad 3rdParty/glad/src/glad.c)
+add_library(glad 3rdParty/glad/src/glad.c
+        src/engine/texture.cpp
+        src/engine/texture.h)
 file(GLOB SOURCES src/*.cpp src/engine/*.cpp)
 add_executable(Wizard3D ${SOURCES})
 
