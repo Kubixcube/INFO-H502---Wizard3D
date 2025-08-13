@@ -25,6 +25,12 @@ public:
     GLuint id() const { return ID; }
     void setInt(const std::string& n,int v)const{ glUniform1i(glGetUniformLocation(ID,n.c_str()),v); }
     void setFloat(const std::string& n,float v)const{ glUniform1f(glGetUniformLocation(ID,n.c_str()),v); }
+    void setVec2(const std::string& n, const glm::vec2& v) const {
+        glUniform2fv(glGetUniformLocation(ID, n.c_str()), 1, glm::value_ptr(v));
+    }
+    void setVec2(const std::string& name, float x, float y) const {
+        glUniform2f(glGetUniformLocation(ID, name.c_str()), x, y);
+    }
     void setVec3(const std::string& n,const glm::vec3& v)const{ glUniform3fv(glGetUniformLocation(ID,n.c_str()),1,glm::value_ptr(v)); }
     void setMat4(const std::string& n,const glm::mat4& m)const{ glUniformMatrix4fv(glGetUniformLocation(ID,n.c_str()),1,GL_FALSE,glm::value_ptr(m)); }
 };

@@ -111,7 +111,10 @@ void Scene::makePlayer() {
 
 void Scene::makeFloor() {
     floor = Object{"assets/models/plane.obj", "assets/textures/grass.jpg"};
-    floor.scale({20.0f,1.0f,20.0f});
+    int x = 2000;
+    int z = 2000;
+    floor.scale({x,1.0f,z});
+    floor.texture.tiling = {x/10, z/10};
     initPhysics(floor);
     floor.body->setType(reactphysics3d::BodyType::STATIC);
 }

@@ -179,7 +179,7 @@ int main(){
     Object cube  ("assets/models/cube.obj");
     glm::vec3 lightDir=glm::normalize(glm::vec3(-0.3f,-1.0f,-0.4f));
     glm::vec3 lightColor(1.0f), ambient(0.10f), specular(0.0f); float shininess=32.0f;
-    cube.model=glm::translate(glm::mat4(1.0f), glm::vec3(0,0.5f,-2.0f));
+    cube.model = glm::translate(glm::mat4(1.0f), glm::vec3(0,0.5f,-2.0f));
     float last= (float) glfwGetTime();
     while(!glfwWindowShouldClose(win)){
         float t =(float)glfwGetTime();
@@ -206,10 +206,13 @@ int main(){
         lighting.setVec3("specularColor", specular);
         lighting.setFloat("shininess", shininess);
         lighting.setMat4("M", scene.floor.model);
+        lighting.setVec2("texTiling", scene.floor.texture.tiling );
         scene.floor.texture.map();
+        glUniform1i(glGetUniformLocation(lighting.id(),"diffuseMap"),0);
         scene.floor.draw();
         for (const auto& entity : scene.getEntities()) {
             lighting.setMat4("M", entity.model);
+            lighting.setVec2("texTiling", entity.texture.tiling);
             entity.texture.map();
             entity.draw();
         }
@@ -233,6 +236,7 @@ int main(){
 //        glActiveTexture(GL_TEXTURE0);
 //        glBindTexture(GL_TEXTURE_2D, texWizard);
 //        wizard.texture.map();
+        lighting.setVec2("texTiling", scene.player.texture.tiling);
         scene.player.texture.map();
         glUniform1i(glGetUniformLocation(lighting.id(),"diffuseMap"),0);
 //        wizard.draw();
