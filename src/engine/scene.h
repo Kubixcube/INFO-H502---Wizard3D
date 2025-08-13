@@ -10,6 +10,8 @@ private:
     std::vector<Object> entities;
     void makeSkyBox2();
     void makePlayer();
+    void makeFloor();
+    reactphysics3d::Collider * initPhysics(Object &obj);
     reactphysics3d::PhysicsCommon physicsCommon;
     reactphysics3d::PhysicsWorld* world;
 public:
@@ -23,7 +25,5 @@ public:
     void update(float deltaTime);
     std::vector<Object> getEntities() const {return entities;}
     ~Scene();
-
-
 };
 #endif

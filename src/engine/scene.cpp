@@ -5,27 +5,13 @@ Scene::Scene(std::string n) : name(n) {
     world = physicsCommon.createPhysicsWorld();
     world->setGravity(rp3d::Vector3(0, -GRAVITY, 0));
     makePlayer();
-
+    makeFloor();
     makeSkyBox2();
 }
 
 Object& Scene::addEntity(Object obj,float mass, bool isStatic) {
     // Get initial position and orientation from the object's model matrix
-    glm::vec3 position = glm::vec3(obj.model[3]);
-    glm::mat4 rotationMatrix = obj.model;
-    // normalizing matrix for non uniform scale objects
-    rotationMatrix[0] = glm::normalize(rotationMatrix[0]);
-    rotationMatrix[1] = glm::normalize(rotationMatrix[1]);
-    rotationMatrix[2] = glm::normalize(rotationMatrix[2]);
-    glm::quat orientation = glm::quat_cast(rotationMatrix);
-    reactphysics3d::Transform transform(toReactPhysics3d(position), toReactPhysics3d(orientation));
-    // Create a rigid body in the physics world
-    obj.body = world->createRigidBody(transform);
-    // Create the collision shape from the half-extents
-    std::cout << obj.halfExtents.x << " | " << obj.halfExtents.y << " | " << obj.halfExtents.z << std::endl;
-    reactphysics3d::BoxShape* boxShape = physicsCommon.createBoxShape(toReactPhysics3d(obj.halfExtents));
-    reactphysics3d::Collider* collider = obj.body->addCollider(boxShape, reactphysics3d::Transform::identity());
-
+    reactphysics3d::Collider *collider =  initPhysics(obj);
     // Check if it's a dynamic or static object
     // dynamic has mass and material properties
     if (!isStatic) {
@@ -40,6 +26,24 @@ Object& Scene::addEntity(Object obj,float mass, bool isStatic) {
     }
     entities.push_back(obj);
     return entities.back();
+}
+
+reactphysics3d::Collider * Scene::initPhysics(Object &obj) {
+    glm::vec3 position = glm::vec3(obj.model[3]);
+    glm::mat4 rotationMatrix = obj.model;
+    // normalizing matrix for non uniform scale objects
+    rotationMatrix[0] = glm::normalize(rotationMatrix[0]);
+    rotationMatrix[1] = glm::normalize(rotationMatrix[1]);
+    rotationMatrix[2] = glm::normalize(rotationMatrix[2]);
+    glm::quat orientation = glm::quat_cast(rotationMatrix);
+    reactphysics3d::Transform transform(toReactPhysics3d(position), toReactPhysics3d(orientation));
+    // Create a rigid body in the physics world
+    obj.body = world->createRigidBody(transform);
+    // Create the collision shape from the half-extents
+    std::cout << obj.halfExtents.x << " | " << obj.halfExtents.y << " | " << obj.halfExtents.z << std::endl;
+    reactphysics3d::BoxShape* boxShape = physicsCommon.createBoxShape(toReactPhysics3d(obj.halfExtents));
+    reactphysics3d::Collider* collider = obj.body->addCollider(boxShape, reactphysics3d::Transform::identity());
+    return collider;
 }
 
 void Scene::update(float deltaTime) {
@@ -101,15 +105,13 @@ void Scene::makeSkyBox2() {
 
 void Scene::makePlayer() {
     player = Object{"assets/models/wizard.obj","assets/textures/wizard_diffuse.png"};
-    auto position = glm::vec3(player.model[3]);
-    glm::mat4 rotationMatrix = player.model;
-    glm::quat orientation = glm::quat_cast(rotationMatrix);
-    reactphysics3d::Transform transform(toReactPhysics3d(position), toReactPhysics3d(orientation));
-    // Create a rigid body in the physics world
-    player.body = world->createRigidBody(transform);
-    // Create the collision shape from the half-extents
-    std::cout << player.halfExtents.x << " | " << player.halfExtents.y << " | " << player.halfExtents.z << std::endl;
-    reactphysics3d::BoxShape* boxShape = physicsCommon.createBoxShape(toReactPhysics3d(player.halfExtents));
-    player.body->addCollider(boxShape, reactphysics3d::Transform::identity());
+    initPhysics(player);
     player.body->setType(reactphysics3d::BodyType::KINEMATIC);
+}
+
+void Scene::makeFloor() {
+    floor = Object{"assets/models/plane.obj", "assets/textures/grass.jpg"};
+    floor.scale({20.0f,1.0f,20.0f});
+    initPhysics(floor);
+    floor.body->setType(reactphysics3d::BodyType::STATIC);
 }

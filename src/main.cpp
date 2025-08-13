@@ -170,10 +170,7 @@ int main(){
     Shader env("src/shaders/envmap.vert", "src/shaders/envmap.frag");
     float reflectMix = 0.6f;
     Scene scene{"Firing range"};
-
-    Object floor{"assets/models/plane.obj", "assets/textures/grass.jpg"};
-    floor.scale({20.0f,1.0f,20.0f});
-    scene.addEntity(floor, 0.0f, true);
+//    scene.addEntity(floor, 0.0f, true);
     Object fallingCube{"assets/models/cube.obj", "assets/textures/container.jpg"};
     fallingCube.translate({0.0f, 5.0f, 0.0f});
     scene.addEntity(fallingCube, 50.0f, false);
@@ -208,6 +205,9 @@ int main(){
         lighting.setVec3("ambientColor", ambient);
         lighting.setVec3("specularColor", specular);
         lighting.setFloat("shininess", shininess);
+        lighting.setMat4("M", scene.floor.model);
+        scene.floor.texture.map();
+        scene.floor.draw();
         for (const auto& entity : scene.getEntities()) {
             lighting.setMat4("M", entity.model);
             entity.texture.map();
