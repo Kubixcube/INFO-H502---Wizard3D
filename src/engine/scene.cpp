@@ -4,6 +4,8 @@
 Scene::Scene(std::string n) : name(n) {
     world = physicsCommon.createPhysicsWorld();
     world->setGravity(rp3d::Vector3(0, -GRAVITY, 0));
+    makePlayer();
+
     makeSkyBox2();
 }
 
@@ -95,4 +97,19 @@ void Scene::makeSkyBox2() {
             "assets/cubemaps/sky/negz.jpg"    // -Z
     };
     skybox.bindTexture(faces);
+}
+
+void Scene::makePlayer() {
+    player = Object{"assets/models/wizard.obj","assets/textures/wizard_diffuse.png"};
+    auto position = glm::vec3(player.model[3]);
+    glm::mat4 rotationMatrix = player.model;
+    glm::quat orientation = glm::quat_cast(rotationMatrix);
+    reactphysics3d::Transform transform(toReactPhysics3d(position), toReactPhysics3d(orientation));
+    // Create a rigid body in the physics world
+    player.body = world->createRigidBody(transform);
+    // Create the collision shape from the half-extents
+    std::cout << player.halfExtents.x << " | " << player.halfExtents.y << " | " << player.halfExtents.z << std::endl;
+    reactphysics3d::BoxShape* boxShape = physicsCommon.createBoxShape(toReactPhysics3d(player.halfExtents));
+    player.body->addCollider(boxShape, reactphysics3d::Transform::identity());
+    player.body->setType(reactphysics3d::BodyType::KINEMATIC);
 }

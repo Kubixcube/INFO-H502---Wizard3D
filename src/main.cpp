@@ -14,7 +14,9 @@
 static int SCR_WIDTH=1280, SCR_HEIGHT=720;
 Camera camera(glm::vec3(0.0f,1.5f,5.0f));
 float lastX=SCR_WIDTH*0.5f, lastY=SCR_HEIGHT*0.5f; bool firstMouse=true;
-bool useThirdPerson=true; glm::vec3 playerPos(0.0f); float orbitYaw=0.0f, orbitPitch=15.0f, camDist=5.0f;
+bool useThirdPerson=true;
+glm::vec3 playerPos(0.0f);
+float orbitYaw=0.0f, orbitPitch=15.0f, camDist=5.0f;
 glm::mat4 thirdPersonView(){
     float cy=cos(glm::radians(orbitYaw)), sy=sin(glm::radians(orbitYaw));
     float cp=cos(glm::radians(orbitPitch)), sp=sin(glm::radians(orbitPitch));
@@ -39,7 +41,7 @@ void mouse_callback(GLFWwindow*, double xpos,double ypos){
 }
 void scroll_callback(GLFWwindow*, double, double yoff){ camera.ProcessMouseScroll((float)yoff); }
 void processInput(GLFWwindow* win,float dt){
-    float speed=3.0f*dt;
+    float speed=5.0f*dt;
     if(glfwGetKey(win,GLFW_KEY_ESCAPE)==GLFW_PRESS) glfwSetWindowShouldClose(win,true);
     if(glfwGetKey(win,GLFW_KEY_C)==GLFW_PRESS) useThirdPerson=true;
     if(glfwGetKey(win,GLFW_KEY_V)==GLFW_PRESS) useThirdPerson=false;
@@ -175,8 +177,8 @@ int main(){
     Object fallingCube{"assets/models/cube.obj", "assets/textures/container.jpg"};
     fallingCube.translate({0.0f, 5.0f, 0.0f});
     scene.addEntity(fallingCube, 50.0f, false);
-    Object wizard("assets/models/wizard.obj","assets/textures/wizard_diffuse.png");
-    wizard = scene.addEntity(wizard, 150.0f, false);
+//    Object wizard("assets/models/wizard.obj","assets/textures/wizard_diffuse.png");
+//    wizard = scene.addEntity(wizard, 150.0f, false);
     Object cube  ("assets/models/cube.obj");
     glm::vec3 lightDir=glm::normalize(glm::vec3(-0.3f,-1.0f,-0.4f));
     glm::vec3 lightColor(1.0f), ambient(0.10f), specular(0.0f); float shininess=32.0f;
@@ -187,15 +189,18 @@ int main(){
         float dt = t-last;
         last=t;
         processInput(win,dt);
+        // wizard movement
+        scene.player.translate(playerPos);
         scene.update(dt);
         glm::mat4 P= glm::perspective(glm::radians(camera.Zoom),(float)SCR_WIDTH/(float)SCR_HEIGHT,0.1f,100.0f);
         glm::mat4 V= useThirdPerson ? thirdPersonView(): camera.GetViewMatrix();
-        wizard.model= glm::translate(glm::mat4(1.0f), playerPos);
+
         glViewport(0,0,SCR_WIDTH,SCR_HEIGHT);
         glClearColor(0.05f,0.07f,0.09f,1.0f);
         glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
         lighting.use();
-        lighting.setMat4("P",P); lighting.setMat4("V",V);
+        lighting.setMat4("P",P);
+        lighting.setMat4("V",V);
         glm::vec3 eye = useThirdPerson ? glm::vec3(glm::inverse(V)[3]) : camera.Position;
         lighting.setVec3("viewPos", eye);
         lighting.setVec3("lightDir", lightDir);
@@ -224,13 +229,14 @@ int main(){
         lighting.use();
         lighting.setMat4("P", P);
         lighting.setMat4("V", V);
-        lighting.setMat4("M", wizard.model);
+        lighting.setMat4("M", scene.player.model);
 //        glActiveTexture(GL_TEXTURE0);
 //        glBindTexture(GL_TEXTURE_2D, texWizard);
+//        wizard.texture.map();
+        scene.player.texture.map();
         glUniform1i(glGetUniformLocation(lighting.id(),"diffuseMap"),0);
-        wizard.texture.map();
-        wizard.draw();
-
+//        wizard.draw();
+        scene.player.draw();
         glDepthFunc(GL_LEQUAL);
         glDepthMask(GL_FALSE);
 //        glDisable(GL_CULL_FACE);

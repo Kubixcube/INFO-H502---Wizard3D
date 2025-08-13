@@ -29,7 +29,6 @@ public:
 
     template<class T>
     explicit Object(const char* objPath, T texPath) : Object(objPath){ bindTexture(texPath); }
-//    explicit Object(const char* objPath, std::vector<std::string> faces) : Object(objPath){ bindTexture(faces); }
 
     template<class T>
     void bindTexture(T path) {
@@ -147,6 +146,14 @@ public:
     }
     void translate(glm::vec3 pos){
         model = glm::translate(glm::mat4(1.0f), pos);
+        if (body) {
+            // get the current transform from the physics body.
+            reactphysics3d::Transform currentTransform = body->getTransform();
+            // set the position of the transform to the one from your input.
+            currentTransform.setPosition(reactphysics3d::Vector3(pos.x, pos.y, pos.z));
+            // set the new transform on the rigid body.
+            body->setTransform(currentTransform);
+        }
     }
 
     void scale(glm::vec3 scaling) {
