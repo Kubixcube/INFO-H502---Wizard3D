@@ -6,6 +6,13 @@ uniform sampler2D diffuseMap;
 uniform vec3 lightDir, lightColor, ambientColor;
 uniform vec3 viewPos, specularColor;
 uniform float shininess;
+
+uniform int   pointLightCount;
+uniform vec3  pointLightPos[4];
+uniform vec3  pointLightColor[4];
+uniform float pointLightIntensity[4];
+uniform float pointLightRadius[4];
+
 void main(){
     vec3 N=normalize(vNormal);
     vec3 L=normalize(-lightDir);
@@ -16,5 +23,19 @@ void main(){
     vec3 V=normalize(viewPos-vWorldPos);
     vec3 H=normalize(L+V);
     vec3 specular=specularColor*pow(max(dot(N,H),0.0), shininess);
+
+    for (int i=0; i<pointLightCount; ++i){
+        vec3  Lvec = pointLightPos[i] - vWorldPos;
+        float d    = length(Lvec);
+        vec3  Lp   = (d>1e-4)? (Lvec/d) : vec3(0.0);
+        float atten = clamp(1.0 - d / pointLightRadius[i], 0.0, 1.0);
+        float ndl   = max(dot(N, Lp), 0.0);
+        float inten = pointLightIntensity[i] * atten;
+
+        diffuse  += (pointLightColor[i] * (ndl * inten)) * albedo;
+        vec3 H2   = normalize(Lp + V);
+        specular += specularColor * pow(max(dot(N,H2),0.0), shininess) * inten;
+    }
+
     FragColor=vec4(ambient+diffuse+specular,1.0);
 }

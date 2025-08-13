@@ -1,20 +1,27 @@
 #ifndef SCENE_H
 #define SCENE_H
 #include<vector>
-#include "Object.h"
+#include "engine/object.h"
 #include <reactphysics3d/reactphysics3d.h>
 class Scene
 {
 private:
     std::string name;
     std::vector<Object> entities;
+    void makeSkyBox2();
+    void makePlayer();
+    void makeFloor();
+    reactphysics3d::Collider * initPhysics(Object &obj);
     reactphysics3d::PhysicsCommon physicsCommon;
     reactphysics3d::PhysicsWorld* world;
 public:
     Scene() = default;
     Scene(std::string);
+    Object skybox;
+    Object floor, player;
     // TODO: deal with static/dynamic in another way
-    Object& addEntity(Object obj,int mass, bool isStatic);
+//    void drawEntityById(std::string ID);
+    Object& addEntity(Object obj, float mass , bool isStatic);
     void update(float deltaTime);
     std::vector<Object> getEntities() const {return entities;}
     ~Scene();
