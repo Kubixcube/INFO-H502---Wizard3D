@@ -26,8 +26,13 @@ public:
     Texture texture;
     Object() = default;
     explicit Object(const char* path){ load(path); }
-    explicit Object(const char* objPath, const char* texPath) : Object(objPath){ bindTexture(texPath); }
-    void bindTexture(const char* path) {
+
+    template<class T>
+    explicit Object(const char* objPath, T texPath) : Object(objPath){ bindTexture(texPath); }
+//    explicit Object(const char* objPath, std::vector<std::string> faces) : Object(objPath){ bindTexture(faces); }
+
+    template<class T>
+    void bindTexture(T path) {
      texture = Texture{path};
     }
     static bool parseFaceItem(const std::string& s, int& vi, int& ti, int& ni) {
@@ -102,11 +107,16 @@ public:
                 maxBounds.y = std::max(maxBounds.y, pos.y);
                 maxBounds.z = std::max(maxBounds.z, pos.z);
             }
-            halfExtents = (maxBounds - minBounds) / 2.0f;
-            aabbCenter = minBounds + halfExtents;
+            halfExtents = (maxBounds - minBounds) * 0.5f;
+            halfExtents.x = halfExtents.x != 0 ? halfExtents.x : 0.1f;
+            halfExtents.y = halfExtents.y != 0 ? halfExtents.y : 0.1f;
+            halfExtents.z = halfExtents.z != 0 ? halfExtents.z : 0.1f;
+            std::cout << "[OBJ] " << path << ": " << halfExtents.x << " | " << halfExtents.y << " | " << halfExtents.z << std::endl;
+            aabbCenter =  0.5f * (minBounds + maxBounds);;
         }
         else {
             // Fallback for an empty or invalid model
+            std::cout << "Invalid model" << std::endl;
             this->halfExtents = glm::vec3(0.5f);
             this->aabbCenter = glm::vec3(0.0f);
         }
@@ -135,9 +145,15 @@ public:
         glBindVertexArray(0);
 
     }
+    void translate(glm::vec3 pos){
+        model = glm::translate(glm::mat4(1.0f), pos);
+    }
 
+    void scale(glm::vec3 scaling) {
+        model = glm::scale(model, scaling);
+        halfExtents *= scaling;
+    }
     void draw() const {
-        texture.map();
         glBindVertexArray(VAO);
         glDrawArrays(GL_TRIANGLES, 0, numVertices);
         glBindVertexArray(0);

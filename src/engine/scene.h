@@ -8,13 +8,19 @@ class Scene
 private:
     std::string name;
     std::vector<Object> entities;
+    Object floor, player;
+    void makeSkyBox2();
     reactphysics3d::PhysicsCommon physicsCommon;
     reactphysics3d::PhysicsWorld* world;
 public:
     Scene() = default;
     Scene(std::string);
+    Object skybox;
     // TODO: deal with static/dynamic in another way
-    Object& addEntity(Object obj,int mass, bool isStatic);
+    void drawEntityById();
+    void drawPlayer();
+    void drawCubemap();
+    Object& addEntity(Object obj, float mass , bool isStatic);
     void update(float deltaTime);
     std::vector<Object> getEntities() const {return entities;}
     ~Scene();

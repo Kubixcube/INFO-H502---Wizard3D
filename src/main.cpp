@@ -59,80 +59,81 @@ void processInput(GLFWwindow* win,float dt){
         if(glfwGetKey(win,GLFW_KEY_LEFT_CONTROL)==GLFW_PRESS) camera.ProcessKeyboard(DOWN,dt);
     }
 }
-GLuint loadTexture2D(const char* path){
-    int w,h,c;
-    stbi_set_flip_vertically_on_load(true);
-    unsigned char* d=stbi_load(path,&w,&h,&c,0);
-    if(!d){ unsigned char white[3]={255,255,255}; GLuint t; glGenTextures(1,&t);
-        glBindTexture(GL_TEXTURE_2D,t);
-        glTexImage2D(GL_TEXTURE_2D,0,GL_RGB,1,1,0,GL_RGB,GL_UNSIGNED_BYTE,white);
-        glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR_MIPMAP_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
-        glGenerateMipmap(GL_TEXTURE_2D);
-        return t;
-    }
-    GLenum fmt=(c==4)?GL_RGBA:GL_RGB; GLuint t; glGenTextures(1,&t); glBindTexture(GL_TEXTURE_2D,t);
-    glTexImage2D(GL_TEXTURE_2D,0,fmt,w,h,0,fmt,GL_UNSIGNED_BYTE,d);
-    glGenerateMipmap(GL_TEXTURE_2D);
-    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_T,GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR_MIPMAP_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
-    stbi_image_free(d);
-    return t;
-}
+//GLuint loadTexture2D(const char* path){
+//    int w,h,c;
+//    stbi_set_flip_vertically_on_load(true);
+//    unsigned char* d=stbi_load(path,&w,&h,&c,0);
+//    if(!d){ unsigned char white[3]={255,255,255}; GLuint t; glGenTextures(1,&t);
+//        glBindTexture(GL_TEXTURE_2D,t);
+//        glTexImage2D(GL_TEXTURE_2D,0,GL_RGB,1,1,0,GL_RGB,GL_UNSIGNED_BYTE,white);
+//        glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR_MIPMAP_LINEAR);
+//        glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
+//        glGenerateMipmap(GL_TEXTURE_2D);
+//        return t;
+//    }
+//    GLenum fmt=(c==4)?GL_RGBA:GL_RGB; GLuint t; glGenTextures(1,&t); glBindTexture(GL_TEXTURE_2D,t);
+//    glTexImage2D(GL_TEXTURE_2D,0,fmt,w,h,0,fmt,GL_UNSIGNED_BYTE,d);
+//    glGenerateMipmap(GL_TEXTURE_2D);
+//    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,GL_REPEAT);
+//    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_T,GL_REPEAT);
+//    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR_MIPMAP_LINEAR);
+//    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
+//    stbi_image_free(d);
+//    return t;
+//}
 
-// --- Cubemap loader ---
-GLuint loadCubemap(const std::vector<std::string>& faces) {
-    int w,h,ch;
-    stbi_set_flip_vertically_on_load(false);
-    GLuint texID; glGenTextures(1, &texID);
-    glBindTexture(GL_TEXTURE_CUBE_MAP, texID);
-    for (unsigned int i=0; i<faces.size(); ++i) {
-        unsigned char* data = stbi_load(faces[i].c_str(), &w, &h, &ch, 3);
-        if (data) {
-            glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0,
-                         GL_RGB, w, h, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
-            stbi_image_free(data);
-        } else {
-            unsigned char fallback[3] = { 20u, 20u, 20u };
-            glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0,
-                         GL_RGB, 1, 1, 0, GL_RGB, GL_UNSIGNED_BYTE, fallback);
-        }
-    }
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-    return texID;
-}
+//// --- Cubemap loader ---
+//GLuint loadCubemap(const std::vector<std::string>& faces) {
+//    int w,h,ch;
+//    stbi_set_flip_vertically_on_load(false);
+//    GLuint texID;
+//    glGenTextures(1, &texID);
+//    glBindTexture(GL_TEXTURE_CUBE_MAP, texID);
+//    for (unsigned int i=0; i<faces.size(); ++i) {
+//        unsigned char* data = stbi_load(faces[i].c_str(), &w, &h, &ch, 3);
+//        if (data) {
+//            glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0,
+//                         GL_RGB, w, h, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+//            stbi_image_free(data);
+//        } else {
+//            unsigned char fallback[3] = { 20u, 20u, 20u };
+//            glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0,
+//                         GL_RGB, 1, 1, 0, GL_RGB, GL_UNSIGNED_BYTE, fallback);
+//        }
+//    }
+//    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+//    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+//    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+//    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+//    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+//    return texID;
+//}
 
 // --- VAO skybox ---
-void makeSkyboxVAO(GLuint &vao, GLuint &vbo){
-    static const float skyboxVertices[] = {
-        -1.0f,  1.0f, -1.0f,  -1.0f, -1.0f, -1.0f,   1.0f, -1.0f, -1.0f,
-         1.0f, -1.0f, -1.0f,   1.0f,  1.0f, -1.0f,  -1.0f,  1.0f, -1.0f,
-        -1.0f, -1.0f,  1.0f,  -1.0f, -1.0f, -1.0f,  -1.0f,  1.0f, -1.0f,
-        -1.0f,  1.0f, -1.0f,  -1.0f,  1.0f,  1.0f,  -1.0f, -1.0f,  1.0f,
-         1.0f, -1.0f, -1.0f,   1.0f, -1.0f,  1.0f,   1.0f,  1.0f,  1.0f,
-         1.0f,  1.0f,  1.0f,   1.0f,  1.0f, -1.0f,   1.0f, -1.0f, -1.0f,
-        -1.0f, -1.0f,  1.0f,  -1.0f,  1.0f,  1.0f,   1.0f,  1.0f,  1.0f,
-         1.0f,  1.0f,  1.0f,   1.0f, -1.0f,  1.0f,  -1.0f, -1.0f,  1.0f,
-        -1.0f,  1.0f, -1.0f,   1.0f,  1.0f, -1.0f,   1.0f,  1.0f,  1.0f,
-         1.0f,  1.0f,  1.0f,  -1.0f,  1.0f,  1.0f,  -1.0f,  1.0f, -1.0f,
-        -1.0f, -1.0f, -1.0f,  -1.0f, -1.0f,  1.0f,   1.0f, -1.0f, -1.0f,
-         1.0f, -1.0f, -1.0f,  -1.0f, -1.0f,  1.0f,   1.0f, -1.0f,  1.0f
-    };
-    glGenVertexArrays(1, &vao);
-    glGenBuffers(1, &vbo);
-    glBindVertexArray(vao);
-    glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(skyboxVertices), skyboxVertices, GL_STATIC_DRAW);
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3*sizeof(float), (void*)0);
-    glBindVertexArray(0);
-}
+//void makeSkyboxVAO(GLuint &vao, GLuint &vbo){
+//    static const float skyboxVertices[] = {
+//        -1.0f,  1.0f, -1.0f,  -1.0f, -1.0f, -1.0f,   1.0f, -1.0f, -1.0f,
+//         1.0f, -1.0f, -1.0f,   1.0f,  1.0f, -1.0f,  -1.0f,  1.0f, -1.0f,
+//        -1.0f, -1.0f,  1.0f,  -1.0f, -1.0f, -1.0f,  -1.0f,  1.0f, -1.0f,
+//        -1.0f,  1.0f, -1.0f,  -1.0f,  1.0f,  1.0f,  -1.0f, -1.0f,  1.0f,
+//         1.0f, -1.0f, -1.0f,   1.0f, -1.0f,  1.0f,   1.0f,  1.0f,  1.0f,
+//         1.0f,  1.0f,  1.0f,   1.0f,  1.0f, -1.0f,   1.0f, -1.0f, -1.0f,
+//        -1.0f, -1.0f,  1.0f,  -1.0f,  1.0f,  1.0f,   1.0f,  1.0f,  1.0f,
+//         1.0f,  1.0f,  1.0f,   1.0f, -1.0f,  1.0f,  -1.0f, -1.0f,  1.0f,
+//        -1.0f,  1.0f, -1.0f,   1.0f,  1.0f, -1.0f,   1.0f,  1.0f,  1.0f,
+//         1.0f,  1.0f,  1.0f,  -1.0f,  1.0f,  1.0f,  -1.0f,  1.0f, -1.0f,
+//        -1.0f, -1.0f, -1.0f,  -1.0f, -1.0f,  1.0f,   1.0f, -1.0f, -1.0f,
+//         1.0f, -1.0f, -1.0f,  -1.0f, -1.0f,  1.0f,   1.0f, -1.0f,  1.0f
+//    };
+//    glGenVertexArrays(1, &vao);
+//    glGenBuffers(1, &vbo);
+//    glBindVertexArray(vao);
+//    glBindBuffer(GL_ARRAY_BUFFER, vbo);
+//    glBufferData(GL_ARRAY_BUFFER, sizeof(skyboxVertices), skyboxVertices, GL_STATIC_DRAW);
+//    glEnableVertexAttribArray(0);
+//    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3*sizeof(float), (void*)0);
+//    glBindVertexArray(0);
+//}
 
 int main(){
     if(!glfwInit()) return -1;
@@ -149,8 +150,8 @@ int main(){
 
     Shader sky("src/shaders/skybox.vert", "src/shaders/skybox.frag");
 
-    GLuint skyVAO=0, skyVBO=0;
-    makeSkyboxVAO(skyVAO, skyVBO);
+   // GLuint skyVAO=0, skyVBO=0;
+    // makeSkyboxVAO(skyVAO, skyVBO);
 
     std::vector<std::string> faces = {
         "assets/cubemaps/sky/posx.jpg",  // +X
@@ -160,7 +161,7 @@ int main(){
         "assets/cubemaps/sky/posz.jpg",  // +Z
         "assets/cubemaps/sky/negz.jpg"    // -Z
     };
-    GLuint cubemapTex = loadCubemap(faces);
+    // GLuint cubemapTex = loadCubemap(faces);
 
     Shader lighting("src/shaders/lighting.vert","src/shaders/lighting.frag");
 
@@ -169,18 +170,14 @@ int main(){
     Scene scene{"Firing range"};
 
     Object floor{"assets/models/plane.obj", "assets/textures/grass.jpg"};
-    floor.model = glm::mat4(1.0f);
-    floor.halfExtents = glm::vec3(20.0f, 0.1f, 20.0f);
-    // temporary solution for a floor
+    floor.scale({20.0f,1.0f,20.0f});
     scene.addEntity(floor, 0.0f, true);
     Object fallingCube{"assets/models/cube.obj", "assets/textures/container.jpg"};
-    fallingCube.model = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 50.0f, 0.0f));
-//    scene.addEntity(std::move(fallingCube), 50.0f, false);
+    fallingCube.translate({0.0f, 5.0f, 0.0f});
     scene.addEntity(fallingCube, 50.0f, false);
     Object wizard("assets/models/wizard.obj","assets/textures/wizard_diffuse.png");
+    wizard = scene.addEntity(wizard, 150.0f, false);
     Object cube  ("assets/models/cube.obj");
-//    GLuint texWizard=loadTexture2D("assets/textures/wizard_diffuse.png");
-//    GLuint texCube = loadTexture2D("assets/textures/container.jpg");
     glm::vec3 lightDir=glm::normalize(glm::vec3(-0.3f,-1.0f,-0.4f));
     glm::vec3 lightColor(1.0f), ambient(0.10f), specular(0.0f); float shininess=32.0f;
     cube.model=glm::translate(glm::mat4(1.0f), glm::vec3(0,0.5f,-2.0f));
@@ -208,11 +205,8 @@ int main(){
         lighting.setFloat("shininess", shininess);
         for (const auto& entity : scene.getEntities()) {
             lighting.setMat4("M", entity.model);
-            
-            glFrontFace(GL_CW);
+            entity.texture.map();
             entity.draw();
-            glFrontFace(GL_CCW);
-
         }
         env.use();
         env.setMat4("P", P);
@@ -221,10 +215,10 @@ int main(){
         env.setVec3("viewPos", eye);
         env.setFloat("mixFactor", reflectMix);
         env.setVec3("tint", glm::vec3(1.0f));
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTex);
+        scene.skybox.texture.map();
         glUniform1i(glGetUniformLocation(env.id(), "skybox"), 0);
         glFrontFace(GL_CW);
+        cube.texture.map();
         cube.draw();
         glFrontFace(GL_CCW);
         lighting.use();
@@ -234,26 +228,24 @@ int main(){
 //        glActiveTexture(GL_TEXTURE0);
 //        glBindTexture(GL_TEXTURE_2D, texWizard);
         glUniform1i(glGetUniformLocation(lighting.id(),"diffuseMap"),0);
+        wizard.texture.map();
         wizard.draw();
 
         glDepthFunc(GL_LEQUAL);
         glDepthMask(GL_FALSE);
-        glDisable(GL_CULL_FACE);
+//        glDisable(GL_CULL_FACE);
 
         sky.use();
         sky.setMat4("P", P);
         sky.setMat4("V", V);
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTex);
+        scene.skybox.texture.map();
         glUniform1i(glGetUniformLocation(sky.id(), "skybox"), 0);
 
-        glBindVertexArray(skyVAO);
-        glDrawArrays(GL_TRIANGLES, 0, 36);
-        glBindVertexArray(0);
+        scene.skybox.draw();
 
         glDepthMask(GL_TRUE);
         glDepthFunc(GL_LESS);
-        glEnable(GL_CULL_FACE);
+//        glEnable(GL_CULL_FACE);
         glCullFace(GL_BACK);
         glFrontFace(GL_CCW);
 
@@ -265,3 +257,5 @@ int main(){
     glfwTerminate();
     return 0;
 }
+
+
