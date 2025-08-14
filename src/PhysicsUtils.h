@@ -24,5 +24,7 @@ inline glm::quat toGLM(const rp3d::Quaternion& q) {
     //parameters: w, x, y, z for glm::quat
     return glm::quat(q.w, q.x, q.y, q.z);
 }
-
+inline float randf(float a, float b){
+    return a + (b-a) * (float(rand())/float(RAND_MAX));
+}
 #endif

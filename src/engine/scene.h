@@ -2,13 +2,14 @@
 #define SCENE_H
 #include<vector>
 #include "engine/object.h"
+#include "particule.h"
 #include <reactphysics3d/reactphysics3d.h>
-class Scene
+class Scene: public reactphysics3d::EventListener
 {
 private:
     std::string name;
-    std::vector<Object> entities;
-    void makeSkyBox2();
+    std::vector<std::shared_ptr<Object>> entities;
+    void makeSkyBox();
     void makePlayer();
     void makeFloor();
     reactphysics3d::Collider * initPhysics(Object &obj);
@@ -19,11 +20,20 @@ public:
     Scene(std::string);
     Object skybox;
     Object floor, player;
+    Projectile fireball;
+    ExplosionLight flash;
+    std::vector<Particle> particles{400};
+    size_t particleCursor{0};
     // TODO: deal with static/dynamic in another way
 //    void drawEntityById(std::string ID);
-    Object& addEntity(Object obj, float mass , bool isStatic);
+    std::shared_ptr<Object> addEntity(const std::shared_ptr<Object>& obj,float mass, bool isStatic);
+    void spawnProjectile(glm::vec3 position, glm::vec3 direction);
+    void despawnProjectile();
     void update(float deltaTime);
-    std::vector<Object> getEntities() const {return entities;}
+    std::vector<std::shared_ptr<Object>>getEntities() const {return entities;}
+    void onContact(const CollisionCallback::CallbackData& callbackData) override;
     ~Scene();
+
+    void prepareFireball();
 };
 #endif
