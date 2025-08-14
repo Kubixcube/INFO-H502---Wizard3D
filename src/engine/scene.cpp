@@ -262,3 +262,22 @@ void Scene::onContact(const reactphysics3d::CollisionCallback::CallbackData &cal
         }
     }
 }
+
+void Scene::drawParticles(Shader &shader) {
+    for (const auto& p : particles){
+        if (!p.alive) continue;
+        shader.setVec3("center", p.pos);
+        shader.setFloat("size", p.size);
+        shader.setVec4("color", p.color);
+        glDrawArrays(GL_TRIANGLES, 0, 6);
+    }
+}
+
+void Scene::drawFireBall(Shader &shader) {
+    if ( fireball.active){
+        shader.setVec3("center", fireball.getCurrentPos());
+        shader.setFloat("size", 0.45f);
+        shader.setVec4("color", glm::vec4(1.0f, 0.4f, 0.05f, 0.9f));
+        glDrawArrays(GL_TRIANGLES, 0, 6);
+    }
+}

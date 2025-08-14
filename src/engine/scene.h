@@ -3,6 +3,7 @@
 #include<vector>
 #include "engine/object.h"
 #include "particule.h"
+#include "shader.h"
 #include <reactphysics3d/reactphysics3d.h>
 class Scene: public reactphysics3d::EventListener
 {
@@ -29,6 +30,8 @@ public:
     std::shared_ptr<Object> addEntity(const std::shared_ptr<Object>& obj,float mass, bool isStatic);
     void spawnProjectile(glm::vec3 position, glm::vec3 direction);
     void despawnProjectile();
+    void drawParticles(Shader& shader);
+    void drawFireBall(Shader& shader);
     void update(float deltaTime);
     std::vector<std::shared_ptr<Object>>getEntities() const {return entities;}
     void onContact(const CollisionCallback::CallbackData& callbackData) override;

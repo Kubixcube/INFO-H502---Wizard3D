@@ -297,21 +297,10 @@ int main(){
         }
 
         // fireball comme un gros billboard
-        if ( scene.fireball.active){
-            particleShader.setVec3("center", scene.fireball.getCurrentPos());
-            particleShader.setFloat("size", 0.45f);
-            particleShader.setVec4("color", glm::vec4(1.0f, 0.4f, 0.05f, 0.9f));
-            glDrawArrays(GL_TRIANGLES, 0, 6);
-        }
+        scene.drawFireBall(particleShader);
 
         // particules
-        for (const auto& p : scene.particles){
-            if (!p.alive) continue;
-            particleShader.setVec3("center", p.pos);
-            particleShader.setFloat("size", p.size);
-            particleShader.setVec4("color", p.color);
-            glDrawArrays(GL_TRIANGLES, 0, 6);
-        }
+        scene.drawParticles(particleShader);
 
         glBindVertexArray(0);
         glDepthMask(GL_TRUE);
