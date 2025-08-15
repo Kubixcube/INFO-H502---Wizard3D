@@ -95,6 +95,11 @@ void Scene::update(float deltaTime) {
         fireball.body->applyWorldForceAtCenterOfMass(customGravityForce);
         // Smoke particule logic
         fireball.smokeTimer -= deltaTime;
+        fireball.lifetime -= deltaTime;
+        if (fireball.lifetime <= 0) {
+            std::cout << "End of fireball lifetime" << std::endl;
+            despawnProjectile();
+        }
         if (fireball.smokeTimer <= 0.0f) {
             fireball.smokeTimer = 0.05f;
 
@@ -152,13 +157,19 @@ void Scene::update(float deltaTime) {
 
     for (auto& entity : entities) {
         if (entity->body && entity->body->getType() == reactphysics3d::BodyType::DYNAMIC) {
-            const reactphysics3d::Transform& physTransform = entity->body->getTransform();
-            glm::vec3 pos = toGLM(physTransform.getPosition());
-            glm::quat rot = toGLM(physTransform.getOrientation());
-
-            entity->model = glm::translate(glm::mat4(1.0f), pos) * glm::mat4_cast(rot);
+            updateObjectModel(entity);
         }
     }
+    // player update
+    updateObjectModel(player);
+
+}
+
+void Scene::updateObjectModel(std::shared_ptr<Object> &entity) const {
+    const reactphysics3d::Transform& physTransform = entity->body->getTransform();
+    glm::vec3 pos = toGLM(physTransform.getPosition());
+    glm::quat rot = toGLM(physTransform.getOrientation());
+    entity->model = glm::translate(glm::mat4(1.0f), pos) * glm::mat4_cast(rot);
 }
 
 Scene::~Scene() {
@@ -227,16 +238,17 @@ void Scene::removeEntity(const std::shared_ptr<Object>& obj) {
 }
 
 void Scene::makePlayer() {
-    player = Object{"assets/models/wizard.obj","assets/textures/wizard_diffuse.png"};
-    initPhysics(player);
-    player.body->setType(reactphysics3d::BodyType::KINEMATIC);
+    player = std::make_shared<Object>("assets/models/wizard.obj","assets/textures/wizard_diffuse.png");
+    player->speed = 5.0f;
+    initPhysics(*player);
+    player->body->setType(reactphysics3d::BodyType::KINEMATIC);
 }
 
 void Scene::makeFloor() {
-    floor = Object{"assets/models/plane.obj", "assets/textures/grass.jpg"};
-    floor.scale({20.0f,1.0f,20.0f});
-    initPhysics(floor);
-    floor.body->setType(reactphysics3d::BodyType::STATIC);
+    floor = std::make_shared<Object>("assets/models/plane.obj", "assets/textures/grass.jpg");
+    floor->scale({20.0f,1.0f,20.0f});
+    initPhysics(*floor);
+    floor->body->setType(reactphysics3d::BodyType::STATIC);
 }
 
 void Scene::prepareFireball() {
@@ -339,4 +351,95 @@ void Scene::drawFireBall(Shader &shader) {
         shader.setVec4("color", glm::vec4(1.0f, 0.4f, 0.05f, 0.9f));
         glDrawArrays(GL_TRIANGLES, 0, 6);
     }
+}
+
+// Nécessite <glm/gtx/norm.hpp> déjà inclus avec length2
+std::shared_ptr<Object> Scene::spawnIceWall(const glm::vec3 &playerPos, const glm::vec3 &aimFwd) {
+    // Dimensions
+    const float WIDTH  = 3.2f;
+    const float HEIGHT = 6.0f;
+    const float THICK  = 1.0f;   // un peu plus épais côté physique = plus stable
+    const float DIST   = 2.6f;    // distance devant le joueur
+
+    // 1) Direction horizontale (projetée au sol) -> mur perpendiculaire à cette direction
+    glm::vec3 f = aimFwd;
+    glm::vec3 fHoriz = glm::vec3(f.x, 0.0f, f.z);
+    if (glm::length2(fHoriz) < 1e-12f) fHoriz = glm::vec3(0,0,-1); // fallback si on vise pile vertical
+    fHoriz = glm::normalize(fHoriz);
+
+    // 2) Base orthonormale "verticale" : up = Y, normal du mur = fHoriz
+    const glm::vec3 up(0,1,0);
+    glm::vec3 right = glm::normalize(glm::cross(fHoriz, up)); // X local du mur
+
+    // 3) Centre du mur : posé au sol, à mi-hauteur, et DIST devant le joueur (sur XZ)
+    // Hauteur (y) du dessus du floor (supposé axis-aligned)
+//    glm::vec3 floorT = glm::vec3(floor->model[3]);
+    const float groundY = floor->model[3].y;
+    glm::vec3 center = glm::vec3(playerPos.x, groundY + HEIGHT * 0.5f, playerPos.z) + fHoriz * DIST;
+
+    // 4) Matrice TR **sans scale** (pour la PHYSIQUE)
+    glm::mat4 M(1.0f);
+    M[0] = glm::vec4(right,  0.0f);
+    M[1] = glm::vec4(up,     0.0f);
+    M[2] = glm::vec4(fHoriz, 0.0f);  // Z local = normale du mur (horizontale)
+    M[3] = glm::vec4(center, 1.0f);
+
+    // 5) Création de l'objet : TR propre pour la physique, halfExtents définis AVANT addEntity
+    auto wall = std::make_shared<Object>("assets/models/cube.obj");
+    wall->model       = M;                                             // TR sans scale pour RP3D
+    wall->halfExtents = glm::vec3(WIDTH*0.5f, HEIGHT*0.5f, THICK*0.5f); // taille collision
+
+    // 6) Ajout à la scène en STATIQUE (0.0f), la physique lit le TR propre
+    auto handle = addEntity(wall, 0.0f, true);
+
+    // 7) Scale pour le RENDU (n’affecte pas la physique)
+    handle->scale(glm::vec3(WIDTH, HEIGHT, THICK));
+
+    // 8) Option : neutraliser toute texture 2D héritée (évite "container")
+    handle->texture = Texture(); // id=0 → rendu via shader ice uniquement
+
+    return handle;
+}
+
+void Scene::movePlayer(const glm::vec3 &movement) {
+    // player moves '1 unit' at the time so we don't need keep velocity
+    if (!player || !player->body) return;
+    glm::vec3 frameMove = movement * player->speed;
+    reactphysics3d::Transform currentTransform = player->body->getTransform();
+    glm::vec3 currentPosition = toGLM(currentTransform.getPosition());
+    glm::vec3 newPosition = currentPosition + frameMove;
+
+    //  new transform
+    reactphysics3d::Transform newTransform = currentTransform;
+    newTransform.setPosition(toReactPhysics3d(newPosition));
+
+    // move the body to the new spot for collision check
+    player->body->setTransform(newTransform);
+
+    // if the player's body is  overlapping with any other object
+    if (isPlayerColliding()) {
+        // colliding so we need to revert the transform to the original position.
+        player->body->setTransform(currentTransform);
+    }
+
+}
+
+bool Scene::isPlayerColliding() {
+    if (!player || !player->body) return false;
+    unsigned int numBodies = world->getNbRigidBodies();
+    // test all bodies to find if player collides
+    for (int i = 0; i < numBodies; ++i) {
+        reactphysics3d::RigidBody* otherBody = world->getRigidBody(i);
+        if (otherBody == player->body) continue;
+        if (otherBody == floor->body) continue;
+        if (otherBody->getType() == reactphysics3d::BodyType::DYNAMIC) {
+            std::cout << "Wizard collides with static object!" << std::endl;
+            continue;
+        };
+        // if player collides
+        if (world->testOverlap(player->body, otherBody)) {
+            return true;
+        }
+    }
+    return false;
 }

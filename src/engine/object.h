@@ -12,6 +12,7 @@
 #include "texture.h"
 #include "reactphysics3d/body/RigidBody.h"
 #include "entity.h"
+#include "glm/gtx/norm.hpp"
 
 class Object: public Entity{
 public:
@@ -165,6 +166,13 @@ public:
         if (glm::length(axis) < 0.001f)
             axis = glm::vec3(0.0f, 1.0f, 0.0f);
         model = glm::rotate(model, angle, glm::normalize(axis));
+        // physics body update
+        if (body && glm::length2(playerRot) > 0.001f) {
+            glm::quat targetOrientation = glm::quatLookAt(glm::normalize(-playerRot), glm::vec3(0.0f, 1.0f, 0.0f));
+            reactphysics3d::Transform currentTransform = body->getTransform();
+            currentTransform.setOrientation(toReactPhysics3d(targetOrientation));
+            body->setTransform(currentTransform);
+        }
     }
 
     void scale(glm::vec3 scaling) {

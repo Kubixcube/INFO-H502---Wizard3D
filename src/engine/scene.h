@@ -13,6 +13,7 @@ private:
     void makeSkyBox();
     void makePlayer();
     void makeFloor();
+    bool isPlayerColliding();
     reactphysics3d::Collider * initPhysics(Object &obj);
     reactphysics3d::PhysicsCommon physicsCommon;
     reactphysics3d::PhysicsWorld* world;
@@ -20,7 +21,7 @@ public:
     Scene() = default;
     Scene(std::string);
     Object skybox;
-    Object floor, player;
+    std::shared_ptr<Object> floor, player;
     Projectile fireball;
     ExplosionLight flash;
     std::vector<Particle> particles{400};
@@ -30,17 +31,20 @@ public:
     std::shared_ptr<Object> addEntity(const std::shared_ptr<Object>& obj,float mass, bool isStatic);
     void spawnProjectile(glm::vec3 position, glm::vec3 direction);
     void despawnProjectile();
+    std::shared_ptr<Object> spawnIceWall(const glm::vec3& playerPos, const glm::vec3& aimFwd);
     void drawParticles(Shader& shader);
     void drawFireBall(Shader& shader);
+    void movePlayer(const glm::vec3& movement);
     void update(float deltaTime);
     std::vector<std::shared_ptr<Object>>getEntities() const {return entities;}
     void onContact(const CollisionCallback::CallbackData& callbackData) override;
-
     void removeEntity(const std::shared_ptr<Object>& obj);
 
 
     ~Scene();
 
     void prepareFireball();
+
+    void updateObjectModel(std::shared_ptr<Object> &entity) const;
 };
 #endif
