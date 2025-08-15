@@ -246,7 +246,9 @@ void Scene::makePlayer() {
 
 void Scene::makeFloor() {
     floor = std::make_shared<Object>("assets/models/plane.obj", "assets/textures/grass.jpg");
-    floor->scale({20.0f,1.0f,20.0f});
+    float newSize = 200.0f;
+    floor->scale({newSize,1.0f,newSize});
+    floor->texture.tiling = glm::vec2 {newSize* 0.1f};
     initPhysics(*floor);
     floor->body->setType(reactphysics3d::BodyType::STATIC);
 }

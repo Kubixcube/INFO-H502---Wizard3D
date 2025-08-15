@@ -18,6 +18,7 @@ class Texture {
 public:
     GLuint ID;
     Type type;
+    glm::vec2 tiling{1.0f};
     Texture() = default;
     Texture(std::vector<std::string> faces);
     Texture(const char* path);

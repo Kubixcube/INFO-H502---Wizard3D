@@ -308,6 +308,7 @@ auto renderReflection = [&](Scene& scene, const glm::mat4& P){
 
     // floor
     lighting.setMat4("M", scene.floor->model);
+    lighting.setVec2("texTiling", scene.floor->texture.tiling);
     scene.floor->texture.map();
     scene.floor->draw();
 
@@ -320,6 +321,7 @@ auto renderReflection = [&](Scene& scene, const glm::mat4& P){
     }
     // player
     lighting.setMat4("M", scene.player->model);
+    lighting.setVec2("texTiling",scene.player->texture.tiling);
     scene.player->texture.map();
     glUniform1i(glGetUniformLocation(lighting.id(), "diffuseMap"), 0);
     scene.player->draw();
@@ -400,12 +402,14 @@ auto renderReflection = [&](Scene& scene, const glm::mat4& P){
         lighting.setVec3("specularColor", specular);
         lighting.setFloat("shininess", shininess);
         lighting.setMat4("M", scene.floor->model);
+        lighting.setVec2("texTiling", scene.floor->texture.tiling);
         scene.floor->texture.map();
         scene.floor->draw();
 
         for (const auto& entity : scene.getEntities()) {
             if (gIceWall && entity.get() == gIceWall.get()) continue;
             lighting.setMat4("M", entity->model);
+            lighting.setVec2("texTiling",entity->texture.tiling);
             entity->texture.map();
             entity->draw();
         } 
@@ -443,6 +447,7 @@ auto renderReflection = [&](Scene& scene, const glm::mat4& P){
         lighting.setMat4("P", P);
         lighting.setMat4("V", V);
         lighting.setMat4("M", scene.player->model);
+        lighting.setVec2("texTiling", scene.player->texture.tiling);
         scene.player->texture.map();
         glUniform1i(glGetUniformLocation(lighting.id(),"diffuseMap"),0);
         scene.player->draw();
