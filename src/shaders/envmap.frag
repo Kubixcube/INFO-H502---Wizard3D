@@ -14,6 +14,6 @@ void main() {
     vec3 R = reflect(-V, N);
     vec3 env = texture(skybox, R).rgb;
     vec3 base = vec3(0.7);
-    vec3 color = mix(base, env * tint, clamp(mixFactor,0.0,1.0));
+    vec3 color = mix(tint * 0.15, env, mixFactor);
     FragColor = vec4(color, 1.0);
 }
