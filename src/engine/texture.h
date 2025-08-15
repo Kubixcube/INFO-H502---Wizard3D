@@ -22,6 +22,9 @@ public:
     Texture(std::vector<std::string> faces);
     Texture(const char* path);
     void map() const;
+
+    GLuint id() const { return ID; }  // ou getID()
+
 private:
     int width, height, channels;
 };

@@ -11,8 +11,9 @@
 #include <cstdio>
 #include "texture.h"
 #include "reactphysics3d/body/RigidBody.h"
+#include "entity.h"
 
-class Object{
+class Object: public Entity{
 public:
     GLuint VAO{0}, VBO{0};
     GLsizei numVertices{0};
@@ -22,7 +23,6 @@ public:
     // https://developer.mozilla.org/en-US/docs/Games/Techniques/3D_collision_detection
     glm::vec3 halfExtents;
     glm::vec3 aabbCenter;
-    reactphysics3d::RigidBody* body = nullptr;
     Texture texture;
     Object() = default;
     explicit Object(const char* path){ load(path); }
@@ -91,34 +91,7 @@ public:
                 }
             }
         }
-        // AABB and Half-Extents Calculation
-        if (!P.empty()) {
-//            glm::vec3 minBounds = P[0];
-//            glm::vec3 maxBounds = P[0];
-            glm::vec3 minBounds(std::numeric_limits<float>::max());
-            glm::vec3 maxBounds(-std::numeric_limits<float>::max());
-            for (const auto& pos : P) {
-                minBounds.x = std::min(minBounds.x, pos.x);
-                minBounds.y = std::min(minBounds.y, pos.y);
-                minBounds.z = std::min(minBounds.z, pos.z);
-
-                maxBounds.x = std::max(maxBounds.x, pos.x);
-                maxBounds.y = std::max(maxBounds.y, pos.y);
-                maxBounds.z = std::max(maxBounds.z, pos.z);
-            }
-            halfExtents = (maxBounds - minBounds) * 0.5f;
-            halfExtents.x = halfExtents.x != 0 ? halfExtents.x : 0.1f;
-            halfExtents.y = halfExtents.y != 0 ? halfExtents.y : 0.1f;
-            halfExtents.z = halfExtents.z != 0 ? halfExtents.z : 0.1f;
-            std::cout << "[OBJ] " << path << ": " << halfExtents.x << " | " << halfExtents.y << " | " << halfExtents.z << std::endl;
-            aabbCenter =  0.5f * (minBounds + maxBounds);;
-        }
-        else {
-            // Fallback for an empty or invalid model
-            std::cout << "Invalid model" << std::endl;
-            this->halfExtents = glm::vec3(0.5f);
-            this->aabbCenter = glm::vec3(0.0f);
-        }
+        getHalfExtents(P);
 
         numVertices = (GLsizei)(buf.size() / 8);
         std::cout << "[OBJ] " << path << " -> vertices: " << numVertices << std::endl;
@@ -144,6 +117,35 @@ public:
         glBindVertexArray(0);
 
     }
+
+    void getHalfExtents(std::vector<glm::vec3> &P) {// AABB and Half-Extents Calculation
+        if (!P.empty()) {
+            glm::vec3 minBounds(std::numeric_limits<float>::max());
+            glm::vec3 maxBounds(-std::numeric_limits<float>::max());
+            for (const auto& pos : P) {
+                minBounds.x = std::min(minBounds.x, pos.x);
+                minBounds.y = std::min(minBounds.y, pos.y);
+                minBounds.z = std::min(minBounds.z, pos.z);
+
+                maxBounds.x = std::max(maxBounds.x, pos.x);
+                maxBounds.y = std::max(maxBounds.y, pos.y);
+                maxBounds.z = std::max(maxBounds.z, pos.z);
+            }
+            halfExtents = (maxBounds - minBounds) * 0.5f;
+            halfExtents.x = halfExtents.x != 0 ? halfExtents.x : 0.1f;
+            halfExtents.y = halfExtents.y != 0 ? halfExtents.y : 0.1f;
+            halfExtents.z = halfExtents.z != 0 ? halfExtents.z : 0.1f;
+            std::cout << "[OBJ] " << ": " << halfExtents.x << " | " << halfExtents.y << " | " << halfExtents.z << std::endl;
+            aabbCenter = 0.5f * (minBounds + maxBounds);;
+        }
+        else {
+            // Fallback for an empty or invalid model
+            std::cout << "Invalid model" << std::endl;
+            halfExtents = glm::vec3(0.5f);
+            aabbCenter = glm::vec3(0.0f);
+        }
+    }
+
     void translate(glm::vec3 pos){
         model = glm::translate(glm::mat4(1.0f), pos);
         if (body) {
@@ -162,8 +164,6 @@ public:
         glm::vec3 axis = glm::cross(forward, playerRot);
         if (glm::length(axis) < 0.001f)
             axis = glm::vec3(0.0f, 1.0f, 0.0f);
-        
-            
         model = glm::rotate(model, angle, glm::normalize(axis));
     }
 
