@@ -371,17 +371,13 @@ auto renderReflection = [&](Scene& scene, const glm::mat4& P){
     std::shared_ptr<Object> target = std::make_shared<Object>("assets/models/target_dummy.obj", "assets/textures/target.png");
     float targetScale = 0.3f;
     target->translate({2.0f,0.0f,2.0f});
-    target->scale({targetScale,targetScale,targetScale});
-    scene.addEntity(target, 0, true);
+    target->scale({targetScale,targetScale,targetScale}, true);
+    scene.addEntity(target, 10, false);
     while(!glfwWindowShouldClose(win)){
         float t = (float) glfwGetTime();
         float dt = t-last;
         last=t;
         processInput(win,dt, scene);
-        // wizard movement
-//        scene.player->translate(playerPos);
-
-
         scene.update(dt);
 
         glm::mat4 P= glm::perspective(glm::radians(camera.Zoom),(float)SCR_WIDTH/(float)SCR_HEIGHT,0.1f,100.0f);

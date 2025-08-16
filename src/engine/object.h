@@ -19,6 +19,7 @@ public:
     GLuint VAO{0}, VBO{0};
     GLsizei numVertices{0};
     glm::mat4 model{1.0f};
+    glm::vec3 scaling{1.0f};
     // for rep3d collision
     // Axis-aligned bounding boxes
     // https://developer.mozilla.org/en-US/docs/Games/Techniques/3D_collision_detection
@@ -148,7 +149,7 @@ public:
     }
 
     void translate(glm::vec3 pos){
-        model = glm::translate(glm::mat4(1.0f), pos);
+        model = glm::translate(model, pos);
         if (body) {
             // get the current transform from the physics body.
             reactphysics3d::Transform currentTransform = body->getTransform();
@@ -175,9 +176,13 @@ public:
         }
     }
 
-    void scale(glm::vec3 scaling, bool scaleExtents = true) {
+    void scale(glm::vec3 s, bool scaleExtents = true) {
+        this->scaling = s;
         model = glm::scale(model, scaling);
-        if (scaleExtents) halfExtents *= scaling;
+        if (scaleExtents){
+            halfExtents *= scaling;
+            aabbCenter *= scaling;
+        }
     }
     void draw() const {
         glBindVertexArray(VAO);

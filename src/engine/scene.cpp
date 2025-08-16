@@ -163,14 +163,19 @@ void Scene::update(float deltaTime) {
     }
     // player update
     updateObjectModel(player);
-
 }
 
 void Scene::updateObjectModel(std::shared_ptr<Object> &entity) const {
     const reactphysics3d::Transform& physTransform = entity->body->getTransform();
     glm::vec3 pos = toGLM(physTransform.getPosition());
     glm::quat rot = toGLM(physTransform.getOrientation());
-    entity->model = glm::translate(glm::mat4(1.0f), pos) * glm::mat4_cast(rot);
+    glm::mat4 translation = glm::translate(glm::mat4(1.0f), pos);
+    glm::mat4 rotation = glm::mat4_cast(rot);
+    // re-applying the stored scale from the entity
+    glm::mat4 scaling = glm::scale(glm::mat4(1.0f), entity->scaling);
+    entity->model = translation * rotation * scaling;
+//    entity->model = glm::translate(glm::mat4(1.0f), pos) * glm::mat4_cast(rot);
+
 }
 
 Scene::~Scene() {
@@ -277,7 +282,7 @@ void Scene::makePlayer() {
 void Scene::makeFloor() {
     floor = std::make_shared<Object>("assets/models/plane.obj", "assets/textures/grass.jpg");
     float newSize = 200.0f;
-    floor->scale({newSize,1.0f,newSize});
+    floor->scale({newSize,1.0f,newSize}, true);
     floor->texture.tiling = glm::vec2 {newSize* 0.1f};
     initPhysics(*floor);
     floor->body->setType(reactphysics3d::BodyType::STATIC);
