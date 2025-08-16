@@ -123,6 +123,7 @@ void processInput(GLFWwindow* win,float dt, Scene& scene){
             movementDir = glm::normalize(movementDir);
             playerRot = movementDir; // Update facing direction only when moving
 //            playerPos += movementDir * speed;
+            scene.player->rotate(playerRot);
             scene.movePlayer(movementDir * dt);
         }
         
@@ -151,7 +152,7 @@ void processInput(GLFWwindow* win,float dt, Scene& scene){
         } else {
             fwd = glm::normalize(camera.Front);
         }
-        glm::vec3 muzzle = playerPos + glm::vec3(0,1.6f,0) + fwd*0.3f;
+        glm::vec3 muzzle = playerPos + 0.1f + glm::vec3(0,1.6f,0) + fwd*0.3f;
         scene.spawnProjectile(muzzle, fwd);
     }
     prevClick = click;
@@ -188,7 +189,7 @@ void removeIceWall(Scene& scene, std::shared_ptr<Object>& handle) {
         handle.reset();
     }
 }
-
+std::shared_ptr<Object> target;
 int main(){
     if(!glfwInit()) return -1;
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR,3); glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR,3);
@@ -368,7 +369,11 @@ auto renderReflection = [&](Scene& scene, const glm::mat4& P){
 };
 
 
-
+    target = std::make_shared<Object>("assets/models/target_dummy.obj", "assets/textures/target.png");
+    float targetScale = 0.3f;
+    target->translate({2.0f,0.0f,2.0f});
+    target->scale({targetScale,targetScale,targetScale});
+    scene.addEntity(target, 0, true);
     while(!glfwWindowShouldClose(win)){
         float t = (float) glfwGetTime();
         float dt = t-last;
@@ -376,7 +381,7 @@ auto renderReflection = [&](Scene& scene, const glm::mat4& P){
         processInput(win,dt, scene);
         // wizard movement
 //        scene.player->translate(playerPos);
-        scene.player->rotate(playerRot);
+
 
         scene.update(dt);
 

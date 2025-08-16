@@ -75,13 +75,14 @@ reactphysics3d::Collider* Scene::initPhysics(Object& obj) {
 
     obj.body = world->createRigidBody(transform);   // ✨ transform toujours valide
     obj.body->setUserData(&obj);
-
+    reactphysics3d::Transform colliderOffset = reactphysics3d::Transform::identity();
+    colliderOffset.setPosition(toReactPhysics3d(obj.aabbCenter));
     // Collision shape
     // Assure-toi que halfExtents a été défini AVANT d'appeler addEntity/spawn
     reactphysics3d::BoxShape* boxShape =
         physicsCommon.createBoxShape(toReactPhysics3d(obj.halfExtents));
     reactphysics3d::Collider* collider =
-        obj.body->addCollider(boxShape, reactphysics3d::Transform::identity());
+        obj.body->addCollider(boxShape, colliderOffset);
 
     return collider;
 }
@@ -265,8 +266,13 @@ void Scene::makePlayer() {
     player->body->setUserData(player.get());
     player->body->setType(reactphysics3d::BodyType::KINEMATIC);
 
-    reactphysics3d::CapsuleShape* capsuleShape = physicsCommon.createCapsuleShape(capsuleRadius, capsuleHeight);
-    player->body->addCollider(capsuleShape, reactphysics3d::Transform::identity());
+    reactphysics3d::CapsuleShape* capsuleShape = physicsCommon.createCapsuleShape(capsuleRadius * 0.75, capsuleHeight);
+    reactphysics3d::Transform colliderOffset = reactphysics3d::Transform::identity();
+    colliderOffset.setPosition(toReactPhysics3d(player->aabbCenter));
+
+    // adding the collider to the body using the offset transform
+    player->body->addCollider(capsuleShape, colliderOffset);
+//    player->body->addCollider(capsuleShape, reactphysics3d::Transform::identity());
 }
 void Scene::makeFloor() {
     floor = std::make_shared<Object>("assets/models/plane.obj", "assets/textures/grass.jpg");
@@ -321,11 +327,10 @@ void Scene::onContact(const reactphysics3d::CollisionCallback::CallbackData &cal
         CollisionCallback::ContactPair contactPair = callbackData.getContactPair(p);
         void* entity1 = contactPair.getBody1()->getUserData();
         void* entity2 = contactPair.getBody2()->getUserData();
-        bool collided = false;
         // if the collision is the one with the fireball
         if (entity1 == &fireball || entity2 == &fireball) {
+            if (entity1 == player.get() || entity2 == player.get()) continue;
             if (!fireball.active) continue;
-            collided = true;
             flash.active    = true;
             flash.pos       = fireball.getCurrentPos();
             flash.radius    = 18.0f;
@@ -353,10 +358,6 @@ void Scene::onContact(const reactphysics3d::CollisionCallback::CallbackData &cal
             std::cout << "Fireball collision detected!" << std::endl;
             despawnProjectile();
         }
-        if(!collided) {
-            // pas de collision : avancer + fumée
-
-        }
     }
 }
 
@@ -382,11 +383,13 @@ void Scene::drawFireBall(Shader &shader) {
 // Nécessite <glm/gtx/norm.hpp> déjà inclus avec length2
 std::shared_ptr<Object> Scene::spawnIceWall(const glm::vec3 &playerPos, const glm::vec3 &aimFwd) {
     // Dimensions
-    const float WIDTH  = 3.2f;
+    const float WIDTH  = 10.f;
     const float HEIGHT = 6.0f;
     const float THICK  = 1.0f;   // un peu plus épais côté physique = plus stable
-    const float DIST   = 2.6f;    // distance devant le joueur
-
+    float capsuleRadius = std::max(player->halfExtents.x, player->halfExtents.z);
+    float finalRadius = capsuleRadius * 0.75;
+//    const float DIST   = 2.6f;    // distance devant le joueur
+    const float DIST = finalRadius + (THICK * 0.5f) + 7.0f;
     // 1) Direction horizontale (projetée au sol) -> mur perpendiculaire à cette direction
 //    glm::vec3 f = aimFwd;
     glm::vec3 fHoriz = glm::vec3(aimFwd.x, 0.0f, aimFwd.z);
@@ -413,15 +416,13 @@ std::shared_ptr<Object> Scene::spawnIceWall(const glm::vec3 &playerPos, const gl
     // 5) Création de l'objet : TR propre pour la physique, halfExtents définis AVANT addEntity
     auto wall = std::make_shared<Object>("assets/models/cube.obj");
     wall->model       = M;                                             // TR sans scale pour RP3D
-    wall->scale(glm::vec3(WIDTH, HEIGHT, THICK), true);
-//    wall->halfExtents = glm::vec3(WIDTH*0.5f, HEIGHT*0.5f, THICK*0.5f); // taille collision
+    wall->halfExtents = glm::vec3(WIDTH*0.5f, HEIGHT*0.5f, THICK*0.5f); // taille collision
 
     // 6) Ajout à la scène en STATIQUE (0.0f), la physique lit le TR propre
     auto handle = addEntity(wall, 0.0f, true);
-
+    handle->scale(glm::vec3(WIDTH, HEIGHT, THICK), false);
     // 8) Option : neutraliser toute texture 2D héritée (évite "container")
     handle->texture = Texture(); // id=0 → rendu via shader ice uniquement
-
     return handle;
 }
 
@@ -431,16 +432,18 @@ void Scene::movePlayer(const glm::vec3 &movement) {
     glm::vec3 frameMove = movement * player->speed;
     reactphysics3d::Transform currentTransform = player->body->getTransform();
     glm::vec3 currentPosition = toGLM(currentTransform.getPosition());
-//    glm::vec3 newPosition = currentPosition + frameMove;
+    glm::vec3 newPosition = currentPosition + frameMove;
     // to avoid getting stuck in a static shape, we need to revert  to old pos
     glm::vec3 newPositionX = currentPosition + glm::vec3{frameMove.x, 0.0f,0.0f};
     //  new transform
-//    reactphysics3d::Transform newTransform = currentTransform;
+    reactphysics3d::Transform newTransform = currentTransform;
     reactphysics3d::Transform newTransformX = currentTransform;
     newTransformX.setPosition(toReactPhysics3d(newPositionX));
+    newTransform.setPosition(toReactPhysics3d(newPosition));
 
     // move the body to the new spot for collision check
     player->body->setTransform(newTransformX);
+//    player->body->setTransform(newTransform);
 
     // if the player's body is  overlapping with any other object on X
     if (isPlayerColliding()) {
