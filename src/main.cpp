@@ -468,7 +468,6 @@ auto renderReflection = [&](Scene& scene, const glm::mat4& P){
         int plc = 0;
         glm::vec3 PLpos[4]; glm::vec3 PLcol[4];
         float PLint[4]; float PLrad[4];
-        // todo: Lifetime fireball so it doesn't get stuck
         // lumière portée par la boule (si tu veux un halo pendant le vol)
         if (scene.fireball.active && plc < 4){
             PLpos[plc] = scene.fireball.getCurrentPos();
