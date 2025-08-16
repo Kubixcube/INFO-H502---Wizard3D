@@ -237,13 +237,37 @@ void Scene::removeEntity(const std::shared_ptr<Object>& obj) {
     }
 }
 
+//void Scene::makePlayer() {
+//    player = std::make_shared<Object>("assets/models/wizard.obj","assets/textures/wizard_diffuse.png");
+//    player->speed = 5.0f;
+//    initPhysics(*player);
+//    player->body->setType(reactphysics3d::BodyType::KINEMATIC);
+//}
 void Scene::makePlayer() {
     player = std::make_shared<Object>("assets/models/wizard.obj","assets/textures/wizard_diffuse.png");
     player->speed = 5.0f;
-    initPhysics(*player);
-    player->body->setType(reactphysics3d::BodyType::KINEMATIC);
-}
 
+    //  calculate capsule dimensions based on the model's halfExtents
+    float capsuleRadius = std::max(player->halfExtents.x, player->halfExtents.z);
+    float totalHeight = player->halfExtents.y * 2.0f;
+
+    //  "height" is only the cylindrical part
+    //  we subtract the two half-spheres (caps) from the total height.
+    float capsuleHeight = totalHeight - (2.0f * capsuleRadius);
+
+    // check to ensure the height is not negative if the model is wider than it is tall.
+    if (capsuleHeight < 0) {
+        capsuleHeight = 0;
+    }
+
+    reactphysics3d::Transform transform(reactphysics3d::Vector3(0,0,0), reactphysics3d::Quaternion::identity());
+    player->body = world->createRigidBody(transform);
+    player->body->setUserData(player.get());
+    player->body->setType(reactphysics3d::BodyType::KINEMATIC);
+
+    reactphysics3d::CapsuleShape* capsuleShape = physicsCommon.createCapsuleShape(capsuleRadius, capsuleHeight);
+    player->body->addCollider(capsuleShape, reactphysics3d::Transform::identity());
+}
 void Scene::makeFloor() {
     floor = std::make_shared<Object>("assets/models/plane.obj", "assets/textures/grass.jpg");
     float newSize = 200.0f;
@@ -364,8 +388,8 @@ std::shared_ptr<Object> Scene::spawnIceWall(const glm::vec3 &playerPos, const gl
     const float DIST   = 2.6f;    // distance devant le joueur
 
     // 1) Direction horizontale (projetée au sol) -> mur perpendiculaire à cette direction
-    glm::vec3 f = aimFwd;
-    glm::vec3 fHoriz = glm::vec3(f.x, 0.0f, f.z);
+//    glm::vec3 f = aimFwd;
+    glm::vec3 fHoriz = glm::vec3(aimFwd.x, 0.0f, aimFwd.z);
     if (glm::length2(fHoriz) < 1e-12f) fHoriz = glm::vec3(0,0,-1); // fallback si on vise pile vertical
     fHoriz = glm::normalize(fHoriz);
 
@@ -389,13 +413,11 @@ std::shared_ptr<Object> Scene::spawnIceWall(const glm::vec3 &playerPos, const gl
     // 5) Création de l'objet : TR propre pour la physique, halfExtents définis AVANT addEntity
     auto wall = std::make_shared<Object>("assets/models/cube.obj");
     wall->model       = M;                                             // TR sans scale pour RP3D
-    wall->halfExtents = glm::vec3(WIDTH*0.5f, HEIGHT*0.5f, THICK*0.5f); // taille collision
+    wall->scale(glm::vec3(WIDTH, HEIGHT, THICK), true);
+//    wall->halfExtents = glm::vec3(WIDTH*0.5f, HEIGHT*0.5f, THICK*0.5f); // taille collision
 
     // 6) Ajout à la scène en STATIQUE (0.0f), la physique lit le TR propre
     auto handle = addEntity(wall, 0.0f, true);
-
-    // 7) Scale pour le RENDU (n’affecte pas la physique)
-    handle->scale(glm::vec3(WIDTH, HEIGHT, THICK));
 
     // 8) Option : neutraliser toute texture 2D héritée (évite "container")
     handle->texture = Texture(); // id=0 → rendu via shader ice uniquement
@@ -409,21 +431,33 @@ void Scene::movePlayer(const glm::vec3 &movement) {
     glm::vec3 frameMove = movement * player->speed;
     reactphysics3d::Transform currentTransform = player->body->getTransform();
     glm::vec3 currentPosition = toGLM(currentTransform.getPosition());
-    glm::vec3 newPosition = currentPosition + frameMove;
-
+//    glm::vec3 newPosition = currentPosition + frameMove;
+    // to avoid getting stuck in a static shape, we need to revert  to old pos
+    glm::vec3 newPositionX = currentPosition + glm::vec3{frameMove.x, 0.0f,0.0f};
     //  new transform
-    reactphysics3d::Transform newTransform = currentTransform;
-    newTransform.setPosition(toReactPhysics3d(newPosition));
+//    reactphysics3d::Transform newTransform = currentTransform;
+    reactphysics3d::Transform newTransformX = currentTransform;
+    newTransformX.setPosition(toReactPhysics3d(newPositionX));
 
     // move the body to the new spot for collision check
-    player->body->setTransform(newTransform);
+    player->body->setTransform(newTransformX);
 
-    // if the player's body is  overlapping with any other object
+    // if the player's body is  overlapping with any other object on X
     if (isPlayerColliding()) {
         // colliding so we need to revert the transform to the original position.
         player->body->setTransform(currentTransform);
     }
+    reactphysics3d::Transform currentTransformZ = player->body->getTransform();
+    glm::vec3 currentPositionZ = toGLM(currentTransformZ.getPosition());
+    glm::vec3 newPositionZ = currentPositionZ + glm::vec3(0.0f, 0.0f, frameMove.z);
+    reactphysics3d::Transform newTransformZ = currentTransformZ;
+    newTransformZ.setPosition(toReactPhysics3d(newPositionZ));
+    player->body->setTransform(newTransformZ);
 
+    if (isPlayerColliding()) {
+        // collision on Z-axis, revert to the state before the Z-move
+        player->body->setTransform(currentTransformZ);
+    }
 }
 
 bool Scene::isPlayerColliding() {
@@ -435,7 +469,7 @@ bool Scene::isPlayerColliding() {
         if (otherBody == player->body) continue;
         if (otherBody == floor->body) continue;
         if (otherBody->getType() == reactphysics3d::BodyType::DYNAMIC) {
-            std::cout << "Wizard collides with static object!" << std::endl;
+//            std::cout << "Wizard collides with dynamic object!" << std::endl;
             continue;
         };
         // if player collides

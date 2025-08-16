@@ -175,9 +175,9 @@ public:
         }
     }
 
-    void scale(glm::vec3 scaling) {
+    void scale(glm::vec3 scaling, bool scaleExtents = true) {
         model = glm::scale(model, scaling);
-        halfExtents *= scaling;
+        if (scaleExtents) halfExtents *= scaling;
     }
     void draw() const {
         glBindVertexArray(VAO);
