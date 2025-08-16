@@ -205,12 +205,12 @@ void Scene::makeSkyBox() {
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3*sizeof(float), (void*)0);
     glBindVertexArray(0);
     std::vector<std::string> faces = {
-            "assets/cubemaps/sky/posx.jpg",  // +X
-            "assets/cubemaps/sky/negx.jpg",   // -X
-            "assets/cubemaps/sky/posy.jpg",    // +Y
-            "assets/cubemaps/sky/negy.jpg", // -Y
-            "assets/cubemaps/sky/posz.jpg",  // +Z
-            "assets/cubemaps/sky/negz.jpg"    // -Z
+            "assets/cubemaps/wall/posx.jpg",  // +X
+            "assets/cubemaps/wall/negx.jpg",   // -X
+            "assets/cubemaps/wall/posy.jpg",    // +Y
+            "assets/cubemaps/wall/negy.jpg", // -Y
+            "assets/cubemaps/wall/posz.jpg",  // +Z
+            "assets/cubemaps/wall/negz.jpg"    // -Z
     };
     skybox.bindTexture(faces);
 }
