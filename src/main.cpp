@@ -189,7 +189,7 @@ void removeIceWall(Scene& scene, std::shared_ptr<Object>& handle) {
         handle.reset();
     }
 }
-std::shared_ptr<Object> target;
+
 int main(){
     if(!glfwInit()) return -1;
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR,3); glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR,3);
@@ -368,8 +368,7 @@ auto renderReflection = [&](Scene& scene, const glm::mat4& P){
     glViewport(vp[0], vp[1], vp[2], vp[3]);
 };
 
-
-    target = std::make_shared<Object>("assets/models/target_dummy.obj", "assets/textures/target.png");
+    std::shared_ptr<Object> target = std::make_shared<Object>("assets/models/target_dummy.obj", "assets/textures/target.png");
     float targetScale = 0.3f;
     target->translate({2.0f,0.0f,2.0f});
     target->scale({targetScale,targetScale,targetScale});
