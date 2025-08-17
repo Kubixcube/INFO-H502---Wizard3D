@@ -42,7 +42,7 @@ static inline glm::quat orthoQuatFromModel(const glm::mat4& M) {
 }
 
 
-std::shared_ptr<Object> Scene::addEntity(const std::shared_ptr<Object>& obj,float mass, bool isStatic) {
+std::shared_ptr<Object> Scene::addEntity(const std::shared_ptr<Object>& obj,float mass, bool isStatic, bool withFriction) {
     // Get initial position and orientation from the object's model matrix
     reactphysics3d::Collider *collider =  initPhysics(*obj);
     // Check if it's a dynamic or static object
@@ -51,11 +51,27 @@ std::shared_ptr<Object> Scene::addEntity(const std::shared_ptr<Object>& obj,floa
        obj->body->setType(reactphysics3d::BodyType::DYNAMIC);
         reactphysics3d::Material& material = collider->getMaterial();
         material.setBounciness(0.0f);
-        material.setFrictionCoefficient(0.7f);
+        if(!withFriction) {
+            material.setFrictionCoefficient(0.0f);
+        }
+        else {
+            material.setFrictionCoefficient(0.7f);
+        }
        obj->body->setMass(mass);
     }
     else {
        obj->body->setType(reactphysics3d::BodyType::STATIC);
+        reactphysics3d::Material& material = collider->getMaterial();
+        material.setBounciness(0.0f);
+
+        if(!withFriction) {
+            material.setFrictionCoefficient(0.0f);
+        }
+        else {
+            material.setFrictionCoefficient(0.7f);
+        }
+
+
     }
     entities.push_back(obj);
     return entities.back();
@@ -402,8 +418,9 @@ std::shared_ptr<Object> Scene::spawnIceWall(const glm::vec3 &playerPos, const gl
     fHoriz = glm::normalize(fHoriz);
 
     // 2) Base orthonormale "verticale" : up = Y, normal du mur = fHoriz
-    const glm::vec3 up(0,1,0);
-    glm::vec3 right = glm::normalize(glm::cross(fHoriz, up)); // X local du mur
+    const glm::vec3 worldUp(0,1,0);
+    glm::vec3 right = glm::normalize(glm::cross(worldUp, fHoriz));
+    glm::vec3 up    = glm::normalize(glm::cross(fHoriz, right));   // re-orthonormalisé
 
     // 3) Centre du mur : posé au sol, à mi-hauteur, et DIST devant le joueur (sur XZ)
     // Hauteur (y) du dessus du floor (supposé axis-aligned)
@@ -424,7 +441,7 @@ std::shared_ptr<Object> Scene::spawnIceWall(const glm::vec3 &playerPos, const gl
     wall->halfExtents = glm::vec3(WIDTH*0.5f, HEIGHT*0.5f, THICK*0.5f); // taille collision
 
     // 6) Ajout à la scène en STATIQUE (0.0f), la physique lit le TR propre
-    auto handle = addEntity(wall, 0.0f, true);
+    auto handle = addEntity(wall, 0.0f, true, false);
     handle->scale(glm::vec3(WIDTH, HEIGHT, THICK), false);
     // 8) Option : neutraliser toute texture 2D héritée (évite "container")
     handle->texture = Texture(); // id=0 → rendu via shader ice uniquement

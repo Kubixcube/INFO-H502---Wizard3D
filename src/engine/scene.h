@@ -3,7 +3,7 @@
 #include<vector>
 #include "engine/object.h"
 #include "particule.h"
-#include "shader.h"
+#include "engine/shader.h"
 #include <reactphysics3d/reactphysics3d.h>
 class Scene: public reactphysics3d::EventListener
 {
@@ -28,7 +28,7 @@ public:
     size_t particleCursor{0};
     // TODO: deal with static/dynamic in another way
 //    void drawEntityById(std::string ID);
-    std::shared_ptr<Object> addEntity(const std::shared_ptr<Object>& obj,float mass, bool isStatic);
+    std::shared_ptr<Object> addEntity(const std::shared_ptr<Object>& obj,float mass, bool isStatic, bool withFriction = true);
     void spawnProjectile(glm::vec3 position, glm::vec3 direction);
     void despawnProjectile();
     std::shared_ptr<Object> spawnIceWall(const glm::vec3& playerPos, const glm::vec3& aimFwd);
